@@ -4,74 +4,51 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class AuthController extends Controller
 {
+
     public function login(Request $request)
     {
-        $pin   = trim($request->input('pin', ''));
-        $email = trim($request->input('email', ''));
 
-        if (empty($pin)) {
+        $pin = $request->input('pin');
+
+        if(!$pin){
+
             return response()->json([
-                'success' => false,
-                'data'    => null,
-                'message' => 'PIN is required',
-                'code'    => 422
-            ], 422);
+                'success'=>false,
+                'message'=>'PIN required'
+            ],422);
+
         }
 
-        if (!empty($email)) {
-            $staff = DB::table('staff')
-                ->where('email', $email)
-                ->where('is_active', 1)
-                ->first();
+        $users = User::where('is_active',1)->get();
 
-            if (!$staff || !password_verify($pin, $staff->pin_code)) {
-                return response()->json([
-                    'success' => false,
-                    'data'    => null,
-                    'message' => 'Invalid credentials. Please try again.',
-                    'code'    => 401
-                ], 401);
-            }
-        } else {
-            $allStaff = DB::table('staff')
-                ->where('is_active', 1)
-                ->get();
+        $user = $users->first(function($u) use ($pin){
 
-            $staff = null;
+            return password_verify($pin,$u->pin_code);
 
-            foreach ($allStaff as $s) {
-                if (password_verify($pin, $s->pin_code)) {
-                    $staff = $s;
-                    break;
-                }
-            }
+        });
 
-            if (!$staff) {
-                return response()->json([
-                    'success' => false,
-                    'data'    => null,
-                    'message' => 'Invalid PIN. Please try again.',
-                    'code'    => 401
-                ], 401);
-            }
+        if(!$user){
+
+            return response()->json([
+                'success'=>false,
+                'message'=>'Invalid PIN'
+            ],401);
+
         }
 
         return response()->json([
-            'success' => true,
-            'data'    => [
-                'staff' => [
-                    'id'    => (int) $staff->id,
-                    'name'  => $staff->name,
-                    'email' => $staff->email,
-                    'role'  => $staff->role,
-                ]
-            ],
-            'message' => 'Login successful',
-            'code'    => 200
+            'success'=>true,
+            'staff'=>[
+                'id'=>$user->id,
+                'name'=>$user->name,
+                'role'=>$user->role
+            ]
         ]);
+
     }
+
 }

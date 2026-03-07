@@ -1,13 +1,29 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\OrderController;
+
+/*
+|--------------------------------------------------------------------------
+| Health Check
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/health', function () {
     return response()->json([
-        'success'=>true,
-        'message'=>'CafeOS API running'
+        'success' => true,
+        'message' => 'CafeOS API running'
     ]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Authentication
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/auth/login', [AuthController::class,'login']);
 
 /*
 |--------------------------------------------------------------------------
@@ -15,32 +31,6 @@ Route::get('/health', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::get('/orders', function () {
-    return response()->json([
-        'message' => 'Orders module coming back'
-    ]);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Kitchen
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/kitchen/queue', function () {
-    return response()->json([
-        'message' => 'Kitchen module coming back'
-    ]);
-});
-
-/*
-|--------------------------------------------------------------------------
-| Restaurant Board
-|--------------------------------------------------------------------------
-*/
-
-Route::get('/restaurant/board', function () {
-    return response()->json([
-        'message' => 'Restaurant board module coming back'
-    ]);
-});
+Route::post('/orders', [OrderController::class,'store']);
+Route::post('/orders/{id}/items', [OrderController::class,'addItem']);
+Route::post('/orders/{id}/send', [OrderController::class,'sendToKitchen']);
