@@ -3,52 +3,50 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
-
     public function login(Request $request)
     {
 
         $pin = $request->input('pin');
 
-        if(!$pin){
+        if (! $pin) {
 
             return response()->json([
-                'success'=>false,
-                'message'=>'PIN required'
-            ],422);
+                'success' => false,
+                'message' => 'PIN required',
+            ], 422);
 
         }
 
-        $users = User::where('is_active',1)->get();
+        $users = User::where('is_active', 1)->get();
 
-        $user = $users->first(function($u) use ($pin){
+        $user = $users->first(function ($u) use ($pin) {
 
-            return password_verify($pin,$u->pin_code);
+            return password_verify($pin, $u->pin_code);
 
         });
 
-        if(!$user){
+        if (! $user) {
 
             return response()->json([
-                'success'=>false,
-                'message'=>'Invalid PIN'
-            ],401);
+                'success' => false,
+                'message' => 'Invalid PIN',
+            ], 401);
 
         }
 
         return response()->json([
-            'success'=>true,
-            'staff'=>[
-                'id'=>$user->id,
-                'name'=>$user->name,
-                'role'=>$user->role
-            ]
+            'success' => true,
+            'staff' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'role' => $user->role,
+            ],
         ]);
 
     }
-
 }

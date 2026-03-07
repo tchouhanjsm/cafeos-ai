@@ -11,15 +11,15 @@ return new class extends Migration
 
         Schema::table('users', function (Blueprint $table) {
 
-            if (!Schema::hasColumn('users', 'pin_code')) {
+            if (! Schema::hasColumn('users', 'pin_code')) {
                 $table->string('pin_code')->nullable();
             }
 
-            if (!Schema::hasColumn('users', 'role')) {
+            if (! Schema::hasColumn('users', 'role')) {
                 $table->string('role')->default('waiter');
             }
 
-            if (!Schema::hasColumn('users', 'is_active')) {
+            if (! Schema::hasColumn('users', 'is_active')) {
                 $table->boolean('is_active')->default(true);
             }
 
@@ -35,7 +35,7 @@ return new class extends Migration
             $table->dropColumn([
                 'pin_code',
                 'role',
-                'is_active'
+                'is_active',
             ]);
 
         });

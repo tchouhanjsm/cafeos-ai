@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 
 class StaffSeeder extends Seeder
 {
@@ -16,29 +16,29 @@ class StaffSeeder extends Seeder
                 'name' => 'Admin',
                 'email' => 'admin@cafeos.com',
                 'pin' => '1234',
-                'role' => 'admin'
+                'role' => 'admin',
             ],
 
             [
                 'name' => 'Chef',
                 'email' => 'chef@cafeos.com',
                 'pin' => '4567',
-                'role' => 'chef'
+                'role' => 'chef',
             ],
 
             [
                 'name' => 'Waiter',
                 'email' => 'waiter@cafeos.com',
                 'pin' => '7890',
-                'role' => 'waiter'
+                'role' => 'waiter',
             ],
 
             [
                 'name' => 'Cashier',
                 'email' => 'cashier@cafeos.com',
                 'pin' => '0123',
-                'role' => 'cashier'
-            ]
+                'role' => 'cashier',
+            ],
 
         ];
 
@@ -53,7 +53,7 @@ class StaffSeeder extends Seeder
                     'password' => bcrypt('password'),
                     'pin_code' => password_hash($s['pin'], PASSWORD_BCRYPT),
                     'role' => $s['role'],
-                    'is_active' => 1
+                    'is_active' => 1,
                 ]
 
             );

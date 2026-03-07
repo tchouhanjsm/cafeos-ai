@@ -12,12 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-    $middleware->web(remove: [
-        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-    ]);
+        $middleware->web(remove: [
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        ]);
 
-    $middleware->api();
-})
+        $middleware->api();
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

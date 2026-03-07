@@ -24,7 +24,6 @@ return new class extends Migration
             $table->string('name');                // Example: T1, T2, Garden1
             $table->integer('capacity')->nullable();
 
-
             /*
             |--------------------------------------------------------------------------
             | Table Status
@@ -35,9 +34,8 @@ return new class extends Migration
                 'available',
                 'occupied',
                 'reserved',
-                'cleaning'
+                'cleaning',
             ])->default('available');
-
 
             /*
             |--------------------------------------------------------------------------
@@ -47,7 +45,6 @@ return new class extends Migration
 
             $table->unsignedBigInteger('current_order_id')->nullable();
 
-
             /*
             |--------------------------------------------------------------------------
             | Time Tracking
@@ -56,7 +53,6 @@ return new class extends Migration
 
             $table->timestamp('occupied_at')->nullable();
             $table->timestamp('last_cleared_at')->nullable();
-
 
             $table->timestamps();
         });
