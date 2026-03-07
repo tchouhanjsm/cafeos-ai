@@ -1,14 +1,46 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
-
-Route::post('/auth/login', [AuthController::class, 'login']);
 
 Route::get('/health', function () {
     return response()->json([
-        'success' => true,
-        'message' => 'Laravel API working',
-        'version' => 'v1'
+        'success'=>true,
+        'message'=>'CafeOS API running'
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Orders
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/orders', function () {
+    return response()->json([
+        'message' => 'Orders module coming back'
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Kitchen
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/kitchen/queue', function () {
+    return response()->json([
+        'message' => 'Kitchen module coming back'
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Restaurant Board
+|--------------------------------------------------------------------------
+*/
+
+Route::get('/restaurant/board', function () {
+    return response()->json([
+        'message' => 'Restaurant board module coming back'
     ]);
 });
