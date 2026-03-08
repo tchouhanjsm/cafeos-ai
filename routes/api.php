@@ -18,8 +18,8 @@ Route::post('/auth/login', [AuthController::class,'login']);
 Route::get('/health', function () {
 
     return response()->json([
-        'success'=>true,
-        'message'=>'CafeOS API running'
+        'success' => true,
+        'message' => 'CafeOS API running'
     ]);
 
 });
@@ -41,8 +41,8 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/me', function(){
 
         return response()->json([
-            'success'=>true,
-            'staff'=>auth('api')->user()
+            'success' => true,
+            'staff' => auth('api')->user()
         ]);
 
     });
@@ -65,9 +65,15 @@ Route::middleware('auth:api')->group(function(){
     */
 
     Route::get('/kitchen/queue', [KitchenController::class,'queue']);
-    Route::post('/kitchen/order/{order}/item/{item}/start',[KitchenController::class,'startCooking']);
-    Route::post('/kitchen/order/{order}/item/{item}/ready',[KitchenController::class,'markReady']);
-    Route::post('/kitchen/order/{order}/serve',[KitchenController::class,'serve']);
+
+    Route::post('/kitchen/order/{order}/item/{item}/start',
+        [KitchenController::class,'startCooking']);
+
+    Route::post('/kitchen/order/{order}/item/{item}/ready',
+        [KitchenController::class,'markReady']);
+
+    Route::post('/kitchen/order/{order}/serve',
+        [KitchenController::class,'serve']);
 
     /*
     |--------------------------------------------------------------------------
@@ -84,6 +90,6 @@ Route::middleware('auth:api')->group(function(){
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/restaurant/board',[RestaurantBoardController::class,'index']);
+    Route::get('/restaurant/board', [RestaurantBoardController::class,'index']);
 
 });
