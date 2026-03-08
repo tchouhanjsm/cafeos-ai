@@ -6,20 +6,33 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
+
             $table->id();
+
+            $table->string('order_number');
+
+            $table->unsignedBigInteger('table_id')->nullable();
+
+            $table->unsignedBigInteger('staff_id');
+
+            $table->unsignedBigInteger('shift_id')->nullable();
+
+            $table->string('order_type');
+
+            $table->integer('guest_count')->default(1);
+
+            $table->string('status')->default('open');
+
+            $table->text('notes')->nullable();
+
             $table->timestamps();
+
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('orders');
