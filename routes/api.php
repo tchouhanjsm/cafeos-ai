@@ -57,6 +57,7 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/orders/{id}', [OrderController::class,'show']);
     Route::post('/orders/{id}/items', [OrderController::class,'addItem']);
     Route::post('/orders/{id}/send', [OrderController::class,'sendToKitchen']);
+    
 
     /*
     |--------------------------------------------------------------------------
