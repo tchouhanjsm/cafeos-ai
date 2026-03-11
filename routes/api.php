@@ -76,6 +76,8 @@ Route::middleware('auth:api')->group(function(){
     Route::post('/kitchen/order/{order}/serve',
         [KitchenController::class,'serve']);
 
+    Route::get('/kitchen/queue',[KitchenController::class,'queue']);
+
     /*
     |--------------------------------------------------------------------------
     | Billing
