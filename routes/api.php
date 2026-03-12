@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\KitchenController;
@@ -18,11 +19,12 @@ Route::post('/auth/login', [AuthController::class,'login']);
 Route::get('/health', function () {
 
     return response()->json([
-        'success' => true,
-        'message' => 'CafeOS API running'
+        'success'=>true,
+        'message'=>'CafeOS API running'
     ]);
 
 });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -41,8 +43,8 @@ Route::middleware('auth:api')->group(function(){
     Route::get('/me', function(){
 
         return response()->json([
-            'success' => true,
-            'staff' => auth('api')->user()
+            'success'=>true,
+            'staff'=>auth('api')->user()
         ]);
 
     });
@@ -54,35 +56,28 @@ Route::middleware('auth:api')->group(function(){
     */
 
     Route::post('/orders', [OrderController::class,'store']);
+
     Route::get('/orders/{id}', [OrderController::class,'show']);
+
     Route::post('/orders/{id}/items', [OrderController::class,'addItem']);
+
     Route::post('/orders/{id}/send', [OrderController::class,'sendToKitchen']);
 
-    Route::get('/kitchen/queue',[KitchenController::class,'queue']);
-
-Route::post('/kitchen/item/{id}/start',[KitchenController::class,'startCooking']);
-
-Route::post('/kitchen/item/{id}/ready',[KitchenController::class,'markReady']);
-    
 
     /*
     |--------------------------------------------------------------------------
-    | Kitchen
+    | Kitchen System
     |--------------------------------------------------------------------------
     */
 
     Route::get('/kitchen/queue', [KitchenController::class,'queue']);
 
-    Route::post('/kitchen/order/{order}/item/{item}/start',
-        [KitchenController::class,'startCooking']);
+    Route::get('/kitchen/station/{id}', [KitchenController::class,'stationQueue']);
 
-    Route::post('/kitchen/order/{order}/item/{item}/ready',
-        [KitchenController::class,'markReady']);
+    Route::post('/kitchen/item/{id}/start', [KitchenController::class,'startCooking']);
 
-    Route::post('/kitchen/order/{order}/serve',
-        [KitchenController::class,'serve']);
+    Route::post('/kitchen/item/{id}/ready', [KitchenController::class,'markReady']);
 
-    Route::get('/kitchen/queue',[KitchenController::class,'queue']);
 
     /*
     |--------------------------------------------------------------------------
@@ -91,7 +86,9 @@ Route::post('/kitchen/item/{id}/ready',[KitchenController::class,'markReady']);
     */
 
     Route::post('/orders/{id}/bill', [BillingController::class,'bill']);
+
     Route::post('/orders/{id}/pay', [BillingController::class,'pay']);
+
 
     /*
     |--------------------------------------------------------------------------
@@ -99,6 +96,7 @@ Route::post('/kitchen/item/{id}/ready',[KitchenController::class,'markReady']);
     |--------------------------------------------------------------------------
     */
 
-    Route::get('/restaurant/board', [RestaurantBoardController::class,'index']);
+    Route::get('/restaurant/board',[RestaurantBoardController::class,'index']);
+    Route::get('/kitchen/delays',[KitchenController::class,'delayed']);
 
 });

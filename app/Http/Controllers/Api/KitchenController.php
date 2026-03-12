@@ -8,16 +8,22 @@ use App\Models\OrderItem;
 class KitchenController extends Controller
 {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Full Kitchen Queue
+    |--------------------------------------------------------------------------
+    */
+
     public function queue()
     {
 
         $items = OrderItem::whereIn('status',[
-            'pending',
-            'cooking',
-            'ready'
-        ])
-        ->orderBy('created_at','asc')
-        ->get();
+                'pending',
+                'cooking',
+                'ready'
+            ])
+            ->orderBy('created_at','asc')
+            ->get();
 
         return response()->json([
             'success'=>true,
@@ -26,6 +32,35 @@ class KitchenController extends Controller
 
     }
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Station Queue
+    |--------------------------------------------------------------------------
+    */
+
+    public function stationQueue($id)
+    {
+
+        $items = OrderItem::where('station_id',$id)
+            ->whereIn('status',['pending','cooking'])
+            ->orderBy('created_at','asc')
+            ->get();
+
+        return response()->json([
+            'success'=>true,
+            'station_id'=>$id,
+            'data'=>$items
+        ]);
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Start Cooking
+    |--------------------------------------------------------------------------
+    */
 
     public function startCooking($id)
     {
@@ -52,6 +87,36 @@ class KitchenController extends Controller
 
     }
 
+public function delayed()
+{
+
+    $items = \App\Models\OrderItem::with('menuItem')
+        ->where('status','cooking')
+        ->get()
+        ->filter(function($item){
+
+            if(!$item->cooking_started_at){
+                return false;
+            }
+
+            $elapsed = now()->diffInMinutes($item->cooking_started_at);
+
+            return $elapsed > ($item->menuItem->prep_time ?? 5);
+
+        });
+
+    return response()->json([
+        'success'=>true,
+        'data'=>$items->values()
+    ]);
+
+}
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mark Ready
+    |--------------------------------------------------------------------------
+    */
 
     public function markReady($id)
     {

@@ -11,6 +11,7 @@ class MenuItem extends Model
         'name',
         'price',
         'station_group_id',
+        'prep_time',
         'is_active'
     ];
 
