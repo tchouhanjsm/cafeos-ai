@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\OrderItem;
+use App\Services\KitchenTimerService;
 
 class KitchenController extends Controller
 {
@@ -15,22 +16,38 @@ class KitchenController extends Controller
     */
 
     public function queue()
-    {
+{
 
-        $items = OrderItem::whereIn('status',[
-                'pending',
-                'cooking',
-                'ready'
-            ])
-            ->orderBy('created_at','asc')
-            ->get();
+    $timer = new KitchenTimerService();
 
-        return response()->json([
-            'success'=>true,
-            'data'=>$items
-        ]);
+    $items = \App\Models\OrderItem::with('menuItem','order')
+        ->whereIn('status',['pending','cooking'])
+        ->orderBy('created_at','asc')
+        ->get();
 
-    }
+    $items = $items->map(function($item) use ($timer){
+
+        $timing = $timer->calculate($item);
+
+        return [
+            'id'=>$item->id,
+            'order_id'=>$item->order_id,
+            'item_name'=>$item->item_name,
+            'quantity'=>$item->quantity,
+            'station_id'=>$item->station_id,
+            'status'=>$item->status,
+            'cooking_started_at'=>$item->cooking_started_at,
+            'timer'=>$timing
+        ];
+
+    });
+
+    return response()->json([
+        'success'=>true,
+        'data'=>$items
+    ]);
+
+}
 
 
     /*

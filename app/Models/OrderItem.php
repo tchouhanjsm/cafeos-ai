@@ -21,7 +21,16 @@ class OrderItem extends Model
     |--------------------------------------------------------------------------
     | Relationships
     |--------------------------------------------------------------------------
-    */
+    */public function getCookingSecondsAttribute()
+{
+
+    if(!$this->cooking_started_at){
+        return 0;
+    }
+
+    return now()->diffInSeconds($this->cooking_started_at);
+
+}
 
     public function order()
     {
