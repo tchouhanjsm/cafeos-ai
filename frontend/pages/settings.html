@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaféOS — Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --espresso: #1A0E05; --roast: #3D1F0A; --caramel: #C68B3A;
+      --caramel-lt: #E8A84C; --cream: #F8F4EE; --foam: #EDE8DF;
+      --steam: #9B8F82; --slate: #5A5249;
+      --success: #2D6A4F; --danger: #C0392B; --warning: #E67E22;
+      --sidebar-w: 220px; --topbar-h: 56px;
+      --font: 'DM Sans', sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+      --serif: 'Playfair Display', serif;
+    }
+    html, body { height: 100%; font-family: var(--font); color: var(--espresso); background: var(--foam); }
+    .shell { display: grid; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--topbar-h) 1fr; height: 100vh; }
+
+    /* Sidebar */
+    .sidebar { grid-row: 1/-1; background: var(--espresso); display: flex; flex-direction: column; }
+    .sidebar-logo { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo h1 { font-family: var(--serif); font-size: 22px; color: var(--cream); }
+    .sidebar-logo h1 span { color: var(--caramel); }
+    .sidebar-logo small { display: block; font-size: 10px; color: var(--steam); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 10px 0; }
+    .nav-label { padding: 14px 20px 4px; font-size: 9px; font-family: var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--steam); }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 500; text-decoration: none; border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-item:hover { color: var(--cream); background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: var(--caramel); background: rgba(198,139,58,0.12); border-left-color: var(--caramel); }
+    .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+    .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .staff-row { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--caramel); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+    .staff-name { color: var(--cream); font-size: 12px; font-weight: 600; }
+    .staff-role { font-size: 9px; color: var(--caramel); font-family: var(--mono); text-transform: uppercase; }
+    .staff-info { flex: 1; overflow: hidden; }
+    .logout-btn { background: none; border: none; color: var(--steam); cursor: pointer; font-size: 15px; }
+
+    /* Topbar */
+    .topbar { background: white; border-bottom: 1px solid var(--foam); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .topbar-title { font-size: 16px; font-weight: 700; }
+    .topbar-right { display: flex; gap: 8px; }
+
+    /* Buttons */
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--caramel); color: white; }
+    .btn-primary:hover { background: var(--caramel-lt); }
+    .btn-dark { background: var(--espresso); color: white; }
+    .btn-dark:hover { background: var(--roast); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-ghost { background: transparent; color: var(--slate); }
+    .btn-ghost:hover { background: var(--foam); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* Main */
+    .main { overflow-y: auto; padding: 28px; }
+
+    /* Settings tabs */
+    .settings-tabs { display: flex; gap: 6px; margin-bottom: 28px; }
+    .stab { padding: 8px 20px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1.5px solid #E5DDD5; background: white; color: var(--slate); font-family: var(--font); transition: all 0.15s; }
+    .stab:hover { border-color: var(--caramel); color: var(--caramel); }
+    .stab.active { background: var(--espresso); border-color: var(--espresso); color: white; }
+
+    /* Settings panel */
+    .settings-panel { display: none; }
+    .settings-panel.active { display: block; }
+
+    /* Cards */
+    .card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; margin-bottom: 20px; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--foam); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: 14px; font-weight: 700; }
+    .card-header p  { font-size: 12px; color: var(--steam); margin-top: 2px; }
+    .card-body { padding: 24px; }
+
+    /* Form */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group:last-child { margin-bottom: 0; }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--steam); margin-bottom: 5px; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; }
+    .form-label span { color: var(--danger); }
+    .form-input, .form-select { width: 100%; padding: 9px 12px; border: 1.5px solid #E5DDD5; border-radius: 8px; font-size: 13px; font-family: var(--font); outline: none; color: var(--espresso); transition: border-color 0.15s; background: white; }
+    .form-input:focus, .form-select:focus { border-color: var(--caramel); box-shadow: 0 0 0 3px rgba(198,139,58,0.12); }
+    .form-hint { font-size: 11px; color: var(--steam); margin-top: 4px; }
+
+    /* Radio group */
+    .radio-group { display: flex; gap: 10px; }
+    .radio-opt { flex: 1; padding: 12px; border-radius: 8px; border: 2px solid #E5DDD5; background: white; cursor: pointer; text-align: center; transition: all 0.14s; }
+    .radio-opt:hover { border-color: var(--caramel); }
+    .radio-opt.selected { border-color: var(--espresso); background: var(--espresso); }
+    .radio-opt input { display: none; }
+    .ro-icon  { font-size: 22px; margin-bottom: 5px; }
+    .ro-label { font-size: 12px; font-weight: 700; color: var(--espresso); }
+    .ro-desc  { font-size: 10px; color: var(--steam); margin-top: 3px; }
+    .radio-opt.selected .ro-label,
+    .radio-opt.selected .ro-desc { color: white; }
+
+    /* Status indicators */
+    .status-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--foam); border-radius: 8px; }
+    .status-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.online  { background: var(--success); box-shadow: 0 0 0 3px rgba(45,106,79,0.2); }
+    .status-dot.offline { background: var(--danger);  box-shadow: 0 0 0 3px rgba(192,57,43,0.2); }
+    .status-dot.unknown { background: var(--steam); }
+    .status-text { font-size: 13px; font-weight: 600; flex: 1; }
+    .status-sub  { font-size: 11px; color: var(--steam); }
+
+    /* Queue table */
+    .queue-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .queue-table th { padding: 8px 14px; background: var(--foam); color: var(--steam); font-size: 10px; font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #E5DDD5; text-align: left; }
+    .queue-table td { padding: 10px 14px; border-bottom: 1px solid var(--foam); }
+    .queue-table tr:last-child td { border-bottom: none; }
+    .q-badge { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-family: var(--mono); font-weight: 600; text-transform: uppercase; }
+    .q-pending { background: #FEF5E7; color: var(--warning); }
+    .q-done    { background: #EBF5F0; color: var(--success); }
+    .q-failed  { background: #FDEDEC; color: var(--danger); }
+
+    /* Version info */
+    .version-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .ver-chip { background: var(--foam); border-radius: 8px; padding: 12px 16px; }
+    .ver-chip-label { font-size: 10px; font-family: var(--mono); color: var(--steam); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 1px; }
+    .ver-chip-value { font-size: 15px; font-weight: 700; }
+
+    /* Toast */
+    #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--espresso); color: white; padding: 11px 18px; border-radius: 10px; font-size: 13px; max-width: 300px; opacity: 0; transform: translateY(8px); transition: all 0.25s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.danger  { background: var(--danger); }
+    .toast.warning { background: var(--warning); }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Café<span>OS</span></h1>
+      <small>Point of Sale</small>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Operations</div>
+      <a href="tables.html"  class="nav-item"><span class="icon">🪑</span> Tables</a>
+      <a href="pos.html"     class="nav-item"><span class="icon">📋</span> POS Order</a>
+      <a href="orders.html"  class="nav-item"><span class="icon">📨</span> Open Orders</a>
+      <a href="billing.html" class="nav-item"><span class="icon">💳</span> Billing</a>
+      <div class="nav-label">Management</div>
+      <a href="reports.html"    class="nav-item"><span class="icon">📊</span> Reports</a>
+      <a href="menu-admin.html" class="nav-item"><span class="icon">🍽</span> Menu</a>
+      <a href="settings.html"   class="nav-item active"><span class="icon">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="staff-row">
+        <div class="avatar" id="sAvatar">?</div>
+        <div class="staff-info">
+          <div class="staff-name" id="sName">...</div>
+          <div class="staff-role" id="sRole">-</div>
+        </div>
+        <button class="logout-btn" onclick="API.auth.logout()">⏏</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-title">⚙️ Settings</div>
+    <div class="topbar-right" id="electronBadge" style="display:none">
+      <span style="font-size:11px;font-family:var(--mono);background:var(--espresso);color:var(--caramel);padding:4px 10px;border-radius:6px;">🖥 Desktop Mode</span>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Tabs -->
+    <div class="settings-tabs">
+      <div class="stab active" onclick="switchTab('printer', this)">🖨 Printer</div>
+      <div class="stab"        onclick="switchTab('server',  this)">🌐 Server</div>
+      <div class="stab"        onclick="switchTab('queue',   this)">📦 Offline Queue</div>
+      <div class="stab"        onclick="switchTab('about',   this)">ℹ About</div>
+    </div>
+
+    <!-- ── PRINTER ── -->
+    <div class="settings-panel active" id="panel-printer">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>Printer Connection</h3>
+            <p>Choose how your thermal receipt printer connects</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="form-group" style="margin-bottom:20px">
+            <div class="radio-group">
+              <div class="radio-opt selected" id="opt-network" onclick="selectPrinterType('network')">
+                <div class="ro-icon">🌐</div>
+                <div class="ro-label">Network (IP)</div>
+                <div class="ro-desc">WiFi or LAN connected</div>
+              </div>
+              <div class="radio-opt" id="opt-usb" onclick="selectPrinterType('usb')">
+                <div class="ro-icon">🔌</div>
+                <div class="ro-label">USB</div>
+                <div class="ro-desc">Direct USB cable</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Network settings -->
+          <div id="networkSettings">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Printer IP Address <span>*</span></label>
+                <input type="text" class="form-input" id="printerIp" placeholder="192.168.1.100">
+                <div class="form-hint">Find on printer settings page or network admin panel</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Port</label>
+                <input type="number" class="form-input" id="printerPort" placeholder="9100" value="9100">
+                <div class="form-hint">Default is 9100 for most ESC/POS printers</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- USB settings -->
+          <div id="usbSettings" style="display:none">
+            <div class="form-group">
+              <label class="form-label">Printer Name (optional)</label>
+              <div style="display:flex;gap:8px">
+                <input type="text" class="form-input" id="printerName" placeholder="Leave blank to use system default">
+                <button class="btn btn-ghost btn-sm" onclick="detectPrinters()" style="flex-shrink:0">🔍 Detect</button>
+              </div>
+              <div class="form-hint">Leave blank to print to default printer, or select from detected list</div>
+            </div>
+            <div id="detectedPrinters" style="display:none;margin-top:8px">
+              <div class="form-label" style="margin-bottom:6px">Detected Printers:</div>
+              <div id="printerList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>Receipt Layout</h3>
+            <p>Customize what appears on printed receipts</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Cafe Name</label>
+              <input type="text" class="form-input" id="cafeName" placeholder="My Cafe">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input type="text" class="form-input" id="cafePhone" placeholder="+91 98765 43210">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <input type="text" class="form-input" id="cafeAddress" placeholder="123 Coffee Lane, Your City">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Footer Message</label>
+            <input type="text" class="form-input" id="receiptFooter" placeholder="Thank you! Come again ☕">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Paper Width</label>
+            <select class="form-select" id="receiptWidth">
+              <option value="48">80mm paper — 48 characters per line (most common)</option>
+              <option value="32">57mm paper — 32 characters per line (smaller rolls)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Test print + save -->
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button class="btn btn-ghost" id="btnTestPrint" onclick="testPrint()">🖨 Print Test Receipt</button>
+        <button class="btn btn-primary" onclick="savePrinterSettings()">💾 Save Printer Settings</button>
+      </div>
+    </div>
+
+    <!-- ── SERVER ── -->
+    <div class="settings-panel" id="panel-server">
+
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>PHP Server Connection</h3>
+            <p>CaféOS connects to your local XAMPP/PHP server</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="checkServerNow()">↻ Check Now</button>
+        </div>
+        <div class="card-body">
+          <div class="status-row" id="serverStatusRow" style="margin-bottom:20px">
+            <div class="status-dot unknown" id="serverDot"></div>
+            <div>
+              <div class="status-text" id="serverStatusText">Checking...</div>
+              <div class="status-sub"  id="serverStatusSub">Please wait</div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Server URL</label>
+              <input type="text" class="form-input" id="serverUrl" placeholder="http://localhost">
+              <div class="form-hint">Usually http://localhost for XAMPP</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Server Port</label>
+              <input type="number" class="form-input" id="serverPort" placeholder="80">
+              <div class="form-hint">80 for HTTP (default XAMPP)</div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+            <button class="btn btn-primary" onclick="saveServerSettings()">💾 Save & Reconnect</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3>Offline Mode</h3>
+        </div>
+        <div class="card-body">
+          <p style="font-size:13px;color:var(--slate);line-height:1.6;margin-bottom:14px">
+            When the server is unreachable, CaféOS automatically queues API requests locally.
+            They are replayed in order when the server comes back online.
+          </p>
+          <div class="status-row">
+            <div class="status-dot" id="queueDot" style="background:var(--steam)"></div>
+            <div>
+              <div class="status-text" id="queueStatusText">Queue: checking...</div>
+              <div class="status-sub">Items waiting to sync</div>
+            </div>
+            <button class="btn btn-sm btn-dark" onclick="flushQueue()" id="btnFlush">⬆ Flush Now</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── OFFLINE QUEUE ── -->
+    <div class="settings-panel" id="panel-queue">
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <h3>📦 Offline Queue</h3>
+            <p>API calls stored while server was unreachable</p>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="loadQueue()">↻ Refresh</button>
+            <button class="btn btn-success btn-sm" onclick="flushQueue()">⬆ Flush to Server</button>
+            <button class="btn btn-danger btn-sm" onclick="clearQueue()">🗑 Clear All</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0">
+          <div id="queueContent">
+            <div style="padding:40px;text-align:center;color:var(--steam)">Loading queue...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ABOUT ── -->
+    <div class="settings-panel" id="panel-about">
+      <div class="card">
+        <div class="card-header"><h3>About CaféOS</h3></div>
+        <div class="card-body">
+          <div style="text-align:center;padding:20px 0 28px">
+            <div style="font-family:var(--serif);font-size:42px;color:var(--espresso);margin-bottom:6px">Café<span style="color:var(--caramel)">OS</span></div>
+            <div style="font-size:13px;color:var(--steam)">Point of Sale System for Cafes</div>
+          </div>
+          <div class="version-grid" id="versionInfo">
+            <div class="ver-chip"><div class="ver-chip-label">App Version</div><div class="ver-chip-value" id="appVersion">—</div></div>
+            <div class="ver-chip"><div class="ver-chip-label">Platform</div><div class="ver-chip-value" id="appPlatform">—</div></div>
+            <div class="ver-chip"><div class="ver-chip-label">Mode</div><div class="ver-chip-value" id="appMode">Web Browser</div></div>
+            <div class="ver-chip"><div class="ver-chip-label">Log Location</div><div class="ver-chip-value" style="font-size:11px;font-family:var(--mono)" id="logPath">—</div></div>
+          </div>
+
+          <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--foam)">
+            <div id="updateSection" style="display:none">
+              <div class="status-row" id="updateStatus">
+                <div class="status-dot unknown"></div>
+                <div class="status-text">Checking for updates...</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:14px">
+              <button class="btn btn-ghost btn-sm" onclick="openLogs()">📄 Open Log File</button>
+              <button class="btn btn-ghost btn-sm" onclick="window.electronAPI?.app.openExternal('http://localhost/cafeos')">🌐 Open in Browser</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toasts"></div>
+<script src="../js/api.js"></script>
+<script>
+const isElectron = !!(window.electronAPI?.isElectron);
+
+// ── Boot ─────────────────────────────────────────────────────
+(async () => {
+  if (!API.Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  const user = API.Auth.getUser();
+  document.getElementById('sAvatar').textContent = user.name[0].toUpperCase();
+  document.getElementById('sName').textContent   = user.name;
+  document.getElementById('sRole').textContent   = user.role.toUpperCase();
+
+  // Only admins on Settings
+  if (user.role !== 'admin') {
+    window.location.href = 'tables.html'; return;
+  }
+
+  if (isElectron) {
+    document.getElementById('electronBadge').style.display = '';
+    document.getElementById('appMode').textContent = 'Electron Desktop';
+    await loadElectronConfig();
+    await checkServerNow();
+    await loadQueueCount();
+  } else {
+    // Web-only mode: hide electron-specific panels
+    document.getElementById('appMode').textContent = 'Web Browser';
+    disableElectronPanels();
+  }
+
+  // Handle tab from URL param or IPC
+  const tab = new URLSearchParams(window.location.search).get('tab');
+  if (tab) switchTabByName(tab);
+
+  // Listen for open-settings event from menu
+  if (isElectron) {
+    window.electronAPI.on.openSettings((tab) => switchTabByName(tab));
+  }
+})();
+
+function disableElectronPanels() {
+  document.getElementById('btnTestPrint').textContent = '⚠ Electron Only';
+  document.getElementById('btnTestPrint').disabled    = true;
+  document.getElementById('btnFlush').disabled        = true;
+}
+
+// ── Load config from electron store ──────────────────────────
+async function loadElectronConfig() {
+  const cfg = await window.electronAPI.config.getAll();
+
+  setVal('printerIp',      cfg.printerIp      || '192.168.1.100');
+  setVal('printerPort',    cfg.printerPort     || 9100);
+  setVal('printerName',    cfg.printerName     || '');
+  setVal('cafeName',       cfg.cafeName        || '');
+  setVal('cafePhone',      cfg.cafePhone       || '');
+  setVal('cafeAddress',    cfg.cafeAddress     || '');
+  setVal('receiptFooter',  cfg.receiptFooter   || '');
+  setVal('receiptWidth',   cfg.receiptWidth    || 48);
+  setVal('serverUrl',      cfg.serverUrl       || 'http://localhost');
+  setVal('serverPort',     cfg.serverPort      || 80);
+
+  selectPrinterType(cfg.printerType || 'network', false);
+
+  // App version + platform
+  const [ver, plat] = await Promise.all([
+    window.electronAPI.app.getVersion(),
+    window.electronAPI.app.getPlatform(),
+  ]);
+  document.getElementById('appVersion').textContent  = 'v' + ver;
+  document.getElementById('appPlatform').textContent = { win32:'Windows', darwin:'macOS', linux:'Linux' }[plat] || plat;
+  document.getElementById('updateSection').style.display = '';
+}
+
+function setVal(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.value = val;
+}
+
+// ── Tab switching ─────────────────────────────────────────────
+function switchTab(name, el) {
+  document.querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+
+  if (name === 'queue') loadQueue();
+}
+function switchTabByName(name) {
+  const tabs = { printer:0, server:1, queue:2, about:3 };
+  const idx  = tabs[name] ?? 0;
+  const el   = document.querySelectorAll('.stab')[idx];
+  if (el) switchTab(name, el);
+}
+
+// ── Printer type ─────────────────────────────────────────────
+function selectPrinterType(type, save = true) {
+  document.getElementById('opt-network').classList.toggle('selected', type === 'network');
+  document.getElementById('opt-usb').classList.toggle('selected',     type === 'usb');
+  document.getElementById('networkSettings').style.display = type === 'network' ? '' : 'none';
+  document.getElementById('usbSettings').style.display     = type === 'usb'     ? '' : 'none';
+  if (save && isElectron) window.electronAPI.config.set('printerType', type);
+}
+
+async function detectPrinters() {
+  if (!isElectron) { showToast('Printer detection requires desktop app', 'warning'); return; }
+  const res  = await window.electronAPI.printer.listPrinters();
+  const wrap = document.getElementById('detectedPrinters');
+  const list = document.getElementById('printerList');
+
+  if (!res.printers.length) {
+    list.innerHTML = '<p style="font-size:12px;color:var(--steam)">No printers detected. Check USB connections.</p>';
+  } else {
+    list.innerHTML = res.printers.map(p =>
+      `<button class="btn btn-ghost btn-sm" style="margin:3px;border:1px solid #E5DDD5" onclick="document.getElementById('printerName').value='${p}'">${p}</button>`
+    ).join('');
+  }
+  wrap.style.display = '';
+}
+
+// ── Save settings ─────────────────────────────────────────────
+async function savePrinterSettings() {
+  if (!isElectron) { showToast('Printer settings require desktop app', 'warning'); return; }
+
+  const keys = ['printerIp','printerPort','printerName','cafeName','cafePhone','cafeAddress','receiptFooter','receiptWidth'];
+  for (const k of keys) {
+    const el = document.getElementById(k);
+    if (el) await window.electronAPI.config.set(k, el.type === 'number' ? +el.value : el.value);
+  }
+  showToast('Printer settings saved', 'success');
+}
+
+async function saveServerSettings() {
+  if (!isElectron) { showToast('Server settings require desktop app', 'warning'); return; }
+
+  const url  = document.getElementById('serverUrl').value.trim();
+  const port = parseInt(document.getElementById('serverPort').value) || 80;
+
+  await window.electronAPI.config.set('serverUrl',  url);
+  await window.electronAPI.config.set('serverPort', port);
+
+  showToast('Server settings saved. Reloading...', 'success');
+  setTimeout(() => window.electronAPI.app.reload(), 1500);
+}
+
+// ── Server check ──────────────────────────────────────────────
+async function checkServerNow() {
+  const dot  = document.getElementById('serverDot');
+  const text = document.getElementById('serverStatusText');
+  const sub  = document.getElementById('serverStatusSub');
+
+  dot.className  = 'status-dot unknown';
+  text.textContent = 'Checking connection...';
+  sub.textContent  = '';
+
+  if (!isElectron) {
+    // Web mode: just ping the auth endpoint
+    try {
+      const res = await fetch('../../../backend/api/auth.php', { method: 'GET' });
+      const online = res.ok;
+      dot.className  = `status-dot ${online ? 'online' : 'offline'}`;
+      text.textContent = online ? '✅ Server Online' : '❌ Server Offline';
+      sub.textContent  = online ? 'PHP server responding normally' : 'XAMPP Apache not running';
+    } catch {
+      dot.className = 'status-dot offline';
+      text.textContent = '❌ Server Offline';
+    }
+    return;
+  }
+
+  const result = await window.electronAPI.server.check();
+  const { online } = result;
+
+  dot.className    = `status-dot ${online ? 'online' : 'offline'}`;
+  text.textContent = online ? '✅ Server Online' : '❌ Server Offline';
+  sub.textContent  = online
+    ? `PHP server responding at ${document.getElementById('serverUrl').value}`
+    : 'Start XAMPP → Apache + MySQL to connect';
+}
+
+// ── Queue management ──────────────────────────────────────────
+async function loadQueueCount() {
+  if (!isElectron) return;
+  const count = await window.electronAPI.queue.count();
+  const dot   = document.getElementById('queueDot');
+  const text  = document.getElementById('queueStatusText');
+
+  dot.style.background = count > 0 ? 'var(--warning)' : 'var(--success)';
+  text.textContent     = `Queue: ${count} item(s) pending`;
+}
+
+async function loadQueue() {
+  if (!isElectron) {
+    document.getElementById('queueContent').innerHTML = '<div style="padding:32px;text-align:center;color:var(--steam)">Offline queue requires desktop app</div>';
+    return;
+  }
+
+  const items = await window.electronAPI.queue.list();
+
+  if (!items.length) {
+    document.getElementById('queueContent').innerHTML = '<div style="padding:40px;text-align:center;color:var(--steam)"><div style="font-size:32px;opacity:0.3;margin-bottom:10px">📦</div><p>Queue is empty — all requests synced.</p></div>';
+    return;
+  }
+
+  const rows = items.map(i => `
+    <tr>
+      <td style="font-family:var(--mono);font-size:11px">${i.id}</td>
+      <td><span style="font-family:var(--mono);background:var(--foam);padding:2px 6px;border-radius:4px;font-size:11px">${i.method}</span></td>
+      <td style="font-family:var(--mono);font-size:12px">${i.endpoint}</td>
+      <td style="color:var(--steam);font-size:11px">${i.created_at}</td>
+      <td><span class="q-badge q-${i.status}">${i.status}</span></td>
+      <td>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="removeQueueItem(${i.id})">🗑</button>
+      </td>
+    </tr>
+  `).join('');
+
+  document.getElementById('queueContent').innerHTML = `
+    <table class="queue-table">
+      <thead><tr><th>#</th><th>Method</th><th>Endpoint</th><th>Time</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+async function flushQueue() {
+  if (!isElectron) { showToast('Queue flush requires desktop app', 'warning'); return; }
+  const btn = document.getElementById('btnFlush');
+  btn.disabled = true;
+  btn.textContent = '⏳ Flushing...';
+
+  try {
+    const result = await window.electronAPI.queue.flush();
+    showToast(`Flushed ${result.flushed} item(s)${result.failed ? `, ${result.failed} failed` : ''}`, result.failed ? 'warning' : 'success');
+    await loadQueue();
+    await loadQueueCount();
+  } catch (err) {
+    showToast('Flush failed: ' + err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⬆ Flush to Server';
+  }
+}
+
+async function clearQueue() {
+  if (!isElectron) return;
+  if (!confirm('Clear all queued items? Unsynced data will be lost.')) return;
+  await window.electronAPI.queue.list().then(items =>
+    Promise.all(items.map(i => window.electronAPI.queue.remove(i.id)))
+  );
+  showToast('Queue cleared', 'success');
+  await loadQueue();
+  await loadQueueCount();
+}
+
+async function removeQueueItem(id) {
+  await window.electronAPI.queue.remove(id);
+  showToast('Item removed from queue', 'success');
+  await loadQueue();
+}
+
+// ── Test print ────────────────────────────────────────────────
+async function testPrint() {
+  if (!isElectron) { showToast('Printing requires desktop app', 'warning'); return; }
+  const btn = document.getElementById('btnTestPrint');
+  btn.disabled = true;
+  btn.textContent = '⏳ Printing...';
+
+  try {
+    const result = await window.electronAPI.printer.test();
+    if (result.success) {
+      showToast('Test receipt printed successfully! ✅', 'success');
+    } else {
+      showToast('Print failed: ' + result.error, 'danger');
+    }
+  } catch (err) {
+    showToast('Print error: ' + err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🖨 Print Test Receipt';
+  }
+}
+
+function openLogs() {
+  if (isElectron) window.electronAPI.app.openExternal('file://' + document.getElementById('logPath').textContent);
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+}
+</script>
+</body>
+</html>

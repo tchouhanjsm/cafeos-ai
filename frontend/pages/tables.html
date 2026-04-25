@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaféOS — Tables</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/app.css">
+  <style>
+    .section-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .section-tab {
+      padding: 6px 18px;
+      border-radius: 20px;
+      background: white;
+      border: 1.5px solid #E5DDD5;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .section-tab.active { background: var(--espresso); border-color: var(--espresso); color: white; }
+    .section-tab:hover:not(.active) { border-color: var(--caramel); color: var(--caramel); }
+
+    .floor-map { height: 420px; margin-bottom: 24px; }
+
+    .table-chip { width: 64px; height: 64px; }
+    .table-chip.rectangle { width: 90px; height: 60px; }
+    .table-chip.round     { width: 64px; height: 64px; border-radius: 50%; }
+
+    .tables-list-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .table-row-card {
+      background: white;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      border-left: 4px solid #E5DDD5;
+      cursor: pointer;
+      transition: all 0.15s;
+      box-shadow: var(--shadow-sm);
+    }
+    .table-row-card:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+    .table-row-card.free     { border-left-color: var(--status-free); }
+    .table-row-card.occupied { border-left-color: var(--status-occupied); }
+    .table-row-card.reserved { border-left-color: var(--status-reserved); }
+    .table-row-card.cleaning { border-left-color: var(--status-cleaning); }
+
+    .trc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .trc-num  { font-size: 16px; font-weight: 700; }
+    .trc-cap  { font-size: 11px; color: var(--steam); }
+    .trc-info { font-size: 12px; color: var(--slate); }
+    .trc-order { font-size: 11px; color: var(--caramel); font-family: var(--font-mono); margin-top: 4px; }
+    .trc-action { margin-top: 12px; }
+
+    .legend {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 16px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      color: var(--slate);
+    }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend-dot.free     { background: var(--status-free); }
+    .legend-dot.occupied { background: var(--status-occupied); }
+    .legend-dot.reserved { background: var(--status-reserved); }
+    .legend-dot.cleaning { background: var(--status-cleaning); }
+
+    /* Quick action modal */
+    .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .qa-btn {
+      padding: 20px;
+      border-radius: var(--radius-md);
+      border: 1.5px solid #E5DDD5;
+      background: white;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+      font-family: var(--font-body);
+    }
+    .qa-btn:hover { border-color: var(--caramel); background: #FEF9F2; }
+    .qa-btn .qa-icon { font-size: 28px; margin-bottom: 8px; }
+    .qa-btn .qa-label { font-size: 13px; font-weight: 600; color: var(--espresso); }
+    .qa-btn .qa-desc  { font-size: 11px; color: var(--steam); margin-top: 4px; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Café<span>OS</span></h1>
+      <small>Point of Sale</small>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-group-label">Operations</div>
+      <a href="tables.html" class="nav-item active">
+        <span class="icon">🪑</span> Tables
+      </a>
+      <a href="pos.html" class="nav-item">
+        <span class="icon">📋</span> New Order
+      </a>
+      <a href="orders.html" class="nav-item">
+        <span class="icon">📨</span> Open Orders
+      </a>
+      <a href="billing.html" class="nav-item">
+        <span class="icon">💳</span> Billing
+      </a>
+      <div class="nav-group-label">Management</div>
+      <a href="reports.html" class="nav-item">
+        <span class="icon">📊</span> Reports
+      </a>
+      <a href="menu-admin.html" class="nav-item">
+        <span class="icon">🍽</span> Menu
+      </a>
+      <a href="settings.html" class="nav-item admin-only" style="display:none">
+        <span class="icon">⚙️</span> Settings
+      </a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="staff-badge">
+        <div class="staff-avatar" id="staffAvatar">?</div>
+        <div class="staff-info">
+          <div class="staff-name"  id="staffName">Loading...</div>
+          <div class="staff-role"  id="staffRole">-</div>
+        </div>
+        <button class="logout-btn" onclick="API.auth.logout()" title="Logout">⏏</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">Floor Map</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-time" id="clock">--:--</div>
+      <span class="topbar-badge" id="openCount">0 open</span>
+      <button class="btn btn-primary btn-sm" onclick="window.location.href='pos.html'">+ New Order</button>
+      <button class="btn btn-ghost btn-sm" onclick="loadTables()">↻ Refresh</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="page-header">
+      <div>
+        <h2>Table Management</h2>
+        <p id="tablesSummary">Loading tables...</p>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-outline btn-sm" onclick="toggleView('map')">🗺 Map View</button>
+        <button class="btn btn-outline btn-sm" onclick="toggleView('list')">☰ List View</button>
+      </div>
+    </div>
+
+    <!-- Section filter tabs -->
+    <div class="section-tabs" id="sectionTabs">
+      <div class="section-tab active" onclick="filterSection('all', this)">All Sections</div>
+    </div>
+
+    <!-- Legend -->
+    <div class="legend">
+      <div class="legend-item"><div class="legend-dot free"></div>Free</div>
+      <div class="legend-item"><div class="legend-dot occupied"></div>Occupied</div>
+      <div class="legend-item"><div class="legend-dot reserved"></div>Reserved</div>
+      <div class="legend-item"><div class="legend-dot cleaning"></div>Cleaning</div>
+    </div>
+
+    <!-- Map view -->
+    <div id="mapView">
+      <div class="floor-map card" id="floorMap">
+        <div class="loading-state"><div class="spinner"></div><span>Loading floor map...</span></div>
+      </div>
+    </div>
+
+    <!-- List view -->
+    <div id="listView" style="display:none">
+      <div class="tables-list-grid" id="tablesList"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Table Action Modal -->
+<div class="modal-overlay hidden" id="tableModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modalTitle">Table T1</h3>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="modalContent"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script src="../js/api.js"></script>
+<script>
+  let allTables = [];
+  let currentSection = 'all';
+  let currentView = 'map';
+
+  // ── Init ────────────────────────────────────────────────────
+  (async () => {
+    if (!API.Auth.isLoggedIn()) {
+      window.location.href = 'login.html'; return;
+    }
+    const user = API.Auth.getUser();
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    document.getElementById('staffName').textContent  = user.name;
+    document.getElementById('staffRole').textContent  = user.role.toUpperCase();
+    document.getElementById('staffAvatar').textContent = user.name[0].toUpperCase();
+    if (user.role === 'admin') document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+
+    startClock();
+    await loadTables();
+
+    // Auto-refresh every 30 seconds
+    setInterval(loadTables, 30000);
+  })();
+
+  function startClock() {
+    const el = document.getElementById('clock');
+    const tick = () => {
+      el.textContent = new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+    };
+    tick();
+    setInterval(tick, 10000);
+  }
+
+  async function loadTables() {
+    try {
+      const data = await API.tables.getAll();
+      allTables = data.tables;
+
+      // Update KPI badge
+      document.getElementById('openCount').textContent = data.summary.occupied + ' occupied';
+
+      // Build section tabs
+      buildSectionTabs(data.sections);
+
+      // Summary text
+      document.getElementById('tablesSummary').textContent =
+        `${data.summary.total} tables · ${data.summary.free} free · ${data.summary.occupied} occupied`;
+
+      renderTables();
+    } catch (err) {
+      API.utils.toast('Failed to load tables: ' + err.message, 'danger');
+    }
+  }
+
+  function buildSectionTabs(sections) {
+    const container = document.getElementById('sectionTabs');
+    const allBtn = container.querySelector('[onclick*="all"]');
+    container.innerHTML = '';
+    container.appendChild(allBtn);
+    sections.forEach(s => {
+      const btn = document.createElement('div');
+      btn.className = 'section-tab';
+      btn.textContent = s;
+      btn.onclick = () => filterSection(s, btn);
+      container.appendChild(btn);
+    });
+  }
+
+  function filterSection(section, el) {
+    currentSection = section;
+    document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderTables();
+  }
+
+  function toggleView(view) {
+    currentView = view;
+    document.getElementById('mapView').style.display  = view === 'map'  ? '' : 'none';
+    document.getElementById('listView').style.display = view === 'list' ? '' : 'none';
+  }
+
+  function getFilteredTables() {
+    return currentSection === 'all'
+      ? allTables
+      : allTables.filter(t => t.section === currentSection);
+  }
+
+  function renderTables() {
+    renderFloorMap();
+    renderListView();
+  }
+
+  function renderFloorMap() {
+    const map   = document.getElementById('floorMap');
+    const tables = getFilteredTables();
+    map.innerHTML = '';
+
+    tables.forEach(t => {
+      const chip = document.createElement('div');
+      chip.className = `table-chip ${t.status} ${t.shape}`;
+      chip.style.left = t.pos_x + '%';
+      chip.style.top  = t.pos_y + '%';
+      chip.innerHTML  = `
+        <div class="table-num">${t.table_number}</div>
+        <div class="table-status-dot"></div>
+        ${t.occupied_minutes ? `<div style="font-size:9px;color:#9B8F82">${t.occupied_minutes}m</div>` : ''}
+      `;
+      chip.onclick = () => openTableModal(t);
+      map.appendChild(chip);
+    });
+
+    if (tables.length === 0) {
+      map.innerHTML = '<div class="empty-state"><div class="empty-icon">🪑</div><h3>No tables in this section</h3></div>';
+    }
+  }
+
+  function renderListView() {
+    const list   = document.getElementById('tablesList');
+    const tables = getFilteredTables();
+    list.innerHTML = tables.map(t => `
+      <div class="table-row-card ${t.status}" onclick='openTableModal(${JSON.stringify(t)})'>
+        <div class="trc-top">
+          <div class="trc-num">Table ${t.table_number}</div>
+          <span class="badge badge-${statusBadge(t.status)}">${t.status}</span>
+        </div>
+        <div class="trc-info">
+          <span>${t.section} · ${t.capacity} seats</span>
+        </div>
+        ${t.order_number ? `
+          <div class="trc-order">${t.order_number}</div>
+          <div class="trc-info" style="margin-top:4px">
+            ${t.item_count} item(s) · ${API.utils.currency(t.running_total)} · ${t.occupied_minutes}m
+          </div>
+        ` : ''}
+      </div>
+    `).join('');
+  }
+
+  function statusBadge(s) {
+    return { free: 'success', occupied: 'danger', reserved: 'warning', cleaning: 'neutral' }[s] || 'neutral';
+  }
+
+  function openTableModal(t) {
+    document.getElementById('modalTitle').textContent = `Table ${t.table_number} · ${t.section}`;
+
+    let content = '';
+
+    if (t.status === 'free') {
+      content = `
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="startOrder(${t.id})">
+            <div class="qa-icon">📋</div>
+            <div class="qa-label">New Order</div>
+            <div class="qa-desc">Start ordering for this table</div>
+          </button>
+          <button class="qa-btn" onclick="setStatus(${t.id}, 'reserved')">
+            <div class="qa-icon">🔖</div>
+            <div class="qa-label">Reserve Table</div>
+            <div class="qa-desc">Mark as reserved</div>
+          </button>
+        </div>`;
+    } else if (t.status === 'occupied') {
+      content = `
+        <div style="margin-bottom:16px;padding:14px;background:var(--foam);border-radius:8px;font-size:13px">
+          <div style="font-weight:600;margin-bottom:6px">${t.order_number}</div>
+          <div>${t.item_count} items · <strong>${API.utils.currency(t.running_total)}</strong></div>
+          <div style="color:var(--steam);font-size:11px;margin-top:4px">Occupied for ${t.occupied_minutes} minutes</div>
+        </div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="window.location.href='pos.html?order_id=${t.order_id}'">
+            <div class="qa-icon">➕</div>
+            <div class="qa-label">Add Items</div>
+            <div class="qa-desc">Open order in POS</div>
+          </button>
+          <button class="qa-btn" onclick="window.location.href='billing.html?order_id=${t.order_id}'">
+            <div class="qa-icon">💳</div>
+            <div class="qa-label">Generate Bill</div>
+            <div class="qa-desc">Process payment</div>
+          </button>
+        </div>`;
+    } else if (t.status === 'reserved') {
+      content = `
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="startOrder(${t.id})">
+            <div class="qa-icon">📋</div>
+            <div class="qa-label">Seat Guests</div>
+            <div class="qa-desc">Start order for reservation</div>
+          </button>
+          <button class="qa-btn" onclick="setStatus(${t.id}, 'free')">
+            <div class="qa-icon">✖</div>
+            <div class="qa-label">Cancel Reservation</div>
+            <div class="qa-desc">Mark table as free</div>
+          </button>
+        </div>`;
+    } else {
+      content = `
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="setStatus(${t.id}, 'free')">
+            <div class="qa-icon">✅</div>
+            <div class="qa-label">Mark as Clean</div>
+            <div class="qa-desc">Table is ready for guests</div>
+          </button>
+        </div>`;
+    }
+
+    document.getElementById('modalContent').innerHTML = content;
+    document.getElementById('tableModal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('tableModal').classList.add('hidden');
+  }
+
+  function startOrder(tableId) {
+    closeModal();
+    window.location.href = `pos.html?table_id=${tableId}`;
+  }
+
+  async function setStatus(tableId, status) {
+    closeModal();
+    try {
+      await API.tables.updateStatus(tableId, status);
+      API.utils.toast(`Table marked as ${status}`, 'success');
+      await loadTables();
+    } catch (err) {
+      API.utils.toast(err.message, 'danger');
+    }
+  }
+
+  // Close modal on backdrop click
+  document.getElementById('tableModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>

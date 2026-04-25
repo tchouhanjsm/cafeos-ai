@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CaféOS — Setup Guide & Troubleshooting</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #F8F4EE; color: #1A0E05; }
+  .hero { background: #1A0E05; color: white; padding: 40px; text-align: center; }
+  .hero h1 { font-size: 36px; margin-bottom: 6px; }
+  .hero h1 span { color: #C68B3A; }
+  .hero p { color: #9B8F82; font-size: 15px; }
+  .container { max-width: 820px; margin: 0 auto; padding: 36px 20px; }
+  h2 { font-size: 20px; margin: 32px 0 14px; padding-bottom: 8px; border-bottom: 2px solid #EDE8DF; }
+  h3 { font-size: 15px; margin: 20px 0 8px; color: #3D1F0A; }
+  p, li { font-size: 14px; line-height: 1.7; color: #5A5249; margin-bottom: 6px; }
+  ol, ul { padding-left: 20px; }
+  .card { background: white; border-radius: 12px; padding: 20px 24px; margin-bottom: 16px; border-left: 4px solid #EDE8DF; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card.error  { border-left-color: #C0392B; }
+  .card.fix    { border-left-color: #2D6A4F; }
+  .card.warn   { border-left-color: #E67E22; }
+  .card.info   { border-left-color: #C68B3A; }
+  .card h3 { margin-top: 0; }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .badge.err  { background: #FDEDEC; color: #C0392B; }
+  .badge.ok   { background: #EBF5F0; color: #2D6A4F; }
+  .badge.warn { background: #FEF5E7; color: #E67E22; }
+  code { background: #EDE8DF; padding: 2px 7px; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 13px; }
+  pre  { background: #1A0E05; color: #E8A84C; padding: 14px 18px; border-radius: 8px; font-size: 13px; overflow-x: auto; margin: 10px 0; line-height: 1.6; }
+  a    { color: #C68B3A; }
+  .step { display: flex; gap: 14px; margin-bottom: 14px; }
+  .step-num { width: 28px; height: 28px; border-radius: 50%; background: #1A0E05; color: #C68B3A; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+  .step-body { flex: 1; }
+  .highlight { background: #FFF8EC; border: 1px solid #F5D98B; padding: 12px 16px; border-radius: 8px; font-size: 13px; margin: 10px 0; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Café<span>OS</span> Setup Guide</h1>
+  <p>Fix the "Unexpected token '&lt;'" error and other common issues</p>
+</div>
+
+<div class="container">
+
+<!-- ── COMMON ERROR ─────────────────────────────────────────── -->
+<h2>🔴 Common Error: "Unexpected token '&lt;'… is not valid JSON"</h2>
+
+<div class="card error">
+  <h3>What this means</h3>
+  <p>The PHP API is returning <strong>HTML or XML</strong> instead of JSON. This happens when:</p>
+  <ul>
+    <li>The database doesn't exist or MySQL isn't running</li>
+    <li>PHP's <code>display_errors</code> is <code>On</code> (XAMPP default) and an error leaks into the response</li>
+    <li>The cafeos folder is in the wrong location</li>
+    <li>The database was created with the wrong name</li>
+  </ul>
+</div>
+
+<div class="card fix">
+  <h3>Step 1 — Run the diagnostic tool</h3>
+  <p>Open this URL in your browser while XAMPP is running:</p>
+  <pre>http://localhost/cafeos/backend/check.php</pre>
+  <p>It will show you exactly which step is failing with instructions to fix it. <strong>Start here before anything else.</strong></p>
+</div>
+
+
+<!-- ── DATABASE ─────────────────────────────────────────────── -->
+<h2>📦 Database Setup</h2>
+
+<div class="card warn">
+  <h3>⚠️ Common mistake: Wrong database name</h3>
+  <p>The database must be named exactly <code>cafeos</code> — no underscore, no suffix.</p>
+  <p>If you created <code>cafeos_db</code> or <code>cafe_os</code>, you'll get a connection error.</p>
+</div>
+
+<div class="card fix">
+  <h3>Correct database setup</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      Open XAMPP Control Panel → Start <strong>Apache</strong> and <strong>MySQL</strong>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      Open <a href="http://localhost/phpmyadmin" target="_blank">http://localhost/phpmyadmin</a>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      Click the <strong>SQL</strong> tab and run:
+      <pre>CREATE DATABASE IF NOT EXISTS `cafeos` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</pre>
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      Click <strong>cafeos</strong> in the left sidebar → click <strong>Import</strong> tab → choose file:<br>
+      <code>cafeos/backend/database/schema.sql</code> → click Go
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">5</div>
+    <div class="step-body">
+      Verify: click <strong>cafeos</strong> in sidebar — you should see 8+ tables (staff, tables, orders, etc.)
+    </div>
+  </div>
+</div>
+
+<div class="card info">
+  <h3>Alternative: If your database is named differently</h3>
+  <p>If you already have data in <code>cafeos_db</code>, edit one line in <code>cafeos/backend/config/db.php</code>:</p>
+  <pre>private static string $dbName = 'cafeos_db';  // ← change this</pre>
+</div>
+
+
+<!-- ── PHP ERRORS ─────────────────────────────────────────────── -->
+<h2>🐘 PHP Error Display (XAMPP)</h2>
+
+<div class="card warn">
+  <h3>XAMPP ships with display_errors = On</h3>
+  <p>This is fine for learning PHP, but it <strong>breaks API responses</strong> — any PHP warning gets printed as HTML before the JSON, making the whole response invalid.</p>
+</div>
+
+<div class="card fix">
+  <h3>Fix option A — .htaccess (already done in Phase 3 ZIP)</h3>
+  <p>The file <code>cafeos/backend/.htaccess</code> should contain:</p>
+  <pre>php_flag display_errors         Off
+php_flag display_startup_errors Off
+php_flag log_errors             On</pre>
+  <p>If the file exists with these lines, Apache will override php.ini for this folder. Verify it's there.</p>
+</div>
+
+<div class="card fix">
+  <h3>Fix option B — php.ini</h3>
+  <p>In XAMPP Control Panel → Apache → click <strong>Config</strong> → <strong>PHP (php.ini)</strong></p>
+  <p>Find and change (around line 400):</p>
+  <pre>display_errors = Off</pre>
+  <p>Save → restart Apache in XAMPP Control Panel.</p>
+</div>
+
+
+<!-- ── FILE LOCATION ─────────────────────────────────────────── -->
+<h2>📁 File Location</h2>
+
+<div class="card fix">
+  <h3>The cafeos folder must be inside XAMPP's htdocs</h3>
+  <table style="width:100%;font-size:13px;border-collapse:collapse;margin-top:8px">
+    <tr style="background:#EDE8DF">
+      <th style="padding:8px 12px;text-align:left">Platform</th>
+      <th style="padding:8px 12px;text-align:left">htdocs path</th>
+      <th style="padding:8px 12px;text-align:left">Your files should be at</th>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">Windows</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>C:\xampp\htdocs\</code></td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>C:\xampp\htdocs\cafeos\</code></td>
+    </tr>
+    <tr style="background:#FDFAF7">
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">macOS</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>/Applications/XAMPP/htdocs/</code></td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>/Applications/XAMPP/htdocs/cafeos/</code></td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">Linux</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>/opt/lampp/htdocs/</code></td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>/opt/lampp/htdocs/cafeos/</code></td>
+    </tr>
+  </table>
+
+  <div class="highlight" style="margin-top:14px">
+    ⚠️ <strong>Nested folder trap:</strong> If you extracted the ZIP inside another cafeos folder, you might have:
+    <code>htdocs/cafeos/cafeos/backend/</code> — that's wrong. It should be <code>htdocs/cafeos/backend/</code>
+  </div>
+</div>
+
+
+<!-- ── NPM ERROR ─────────────────────────────────────────────── -->
+<h2>📦 npm Error: "Access token expired or revoked"</h2>
+
+<div class="card error">
+  <h3>This means you have a stale npm auth token</h3>
+  <p>Your <code>.npmrc</code> file has an expired token from a previous npm login. npm is trying to authenticate but the token is invalid.</p>
+</div>
+
+<div class="card fix">
+  <h3>Fix — clear the auth token (no account needed)</h3>
+  <p>Open a terminal in the <code>cafeos/electron/</code> folder and run:</p>
+  <pre># Option 1: Bypass auth entirely (use public registry directly)
+npm install --registry https://registry.npmjs.org
+
+# Option 2: Clear the stored token first, then install
+npm logout
+npm install
+
+# Option 3: If behind a corporate proxy/firewall
+npm config set registry https://registry.npmjs.org
+npm install</pre>
+  <p>You do <strong>not</strong> need an npm account to install packages. These are all public packages.</p>
+</div>
+
+<div class="card info">
+  <h3>Windows: if "better-sqlite3" fails to compile</h3>
+  <p><code>better-sqlite3</code> is a native module that needs C++ build tools:</p>
+  <ol>
+    <li>Download <a href="https://visualstudio.microsoft.com/visual-cpp-build-tools/" target="_blank">Visual Studio Build Tools</a></li>
+    <li>During install, check <strong>"Desktop development with C++"</strong></li>
+    <li>After install, close and reopen terminal, then run <code>npm install</code> again</li>
+  </ol>
+  <p>Or use the prebuilt binary:</p>
+  <pre>npm install --ignore-scripts
+npm rebuild better-sqlite3 --update-binary</pre>
+</div>
+
+
+<!-- ── DEFAULT LOGIN ─────────────────────────────────────────── -->
+<h2>🔑 Default Login</h2>
+
+<div class="card info">
+  <table style="width:100%;font-size:14px;border-collapse:collapse">
+    <tr style="background:#EDE8DF">
+      <th style="padding:8px 12px;text-align:left">Role</th>
+      <th style="padding:8px 12px;text-align:left">Email</th>
+      <th style="padding:8px 12px;text-align:left">PIN</th>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><strong>Admin</strong></td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">admin@cafeos.com</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>password</code></td>
+    </tr>
+    <tr style="background:#FDFAF7">
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">Cashier</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">cashier@cafeos.com</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>password</code></td>
+    </tr>
+    <tr>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">Waiter</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF">waiter@cafeos.com</td>
+      <td style="padding:8px 12px;border-top:1px solid #EDE8DF"><code>password</code></td>
+    </tr>
+  </table>
+  <div class="highlight" style="margin-top:12px">
+    🔐 Change all PINs immediately after first login: Menu → ⚙️ Settings or ask admin to update in DB.
+  </div>
+</div>
+
+<!-- ── DIAGNOSTIC URL ─────────────────────────────────────────── -->
+<h2>🩺 Quick Diagnostic URL</h2>
+<div class="card fix">
+  <p>Always start debugging here — open this in your browser while XAMPP is running:</p>
+  <pre>http://localhost/cafeos/backend/check.php</pre>
+  <p>It checks: PHP version, extensions, MySQL connection, database existence, table count, and makes a live API call — all with colour-coded pass/fail results.</p>
+</div>
+
+</div><!-- /container -->
+</body>
+</html>

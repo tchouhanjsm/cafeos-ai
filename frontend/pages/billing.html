@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaféOS — Billing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --espresso:   #1A0E05;
+      --roast:      #3D1F0A;
+      --caramel:    #C68B3A;
+      --caramel-lt: #E8A84C;
+      --cream:      #F8F4EE;
+      --foam:       #EDE8DF;
+      --steam:      #9B8F82;
+      --slate:      #5A5249;
+      --success:    #2D6A4F;
+      --danger:     #C0392B;
+      --warning:    #E67E22;
+      --sidebar-w:  220px;
+      --topbar-h:   56px;
+      --font:       'DM Sans', sans-serif;
+      --mono:       'IBM Plex Mono', monospace;
+      --serif:      'Playfair Display', serif;
+    }
+
+    html, body { height: 100%; font-family: var(--font); color: var(--espresso); background: var(--foam); }
+
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr;
+      grid-template-rows: var(--topbar-h) 1fr;
+      height: 100vh;
+    }
+
+    /* Sidebar (same as other pages) */
+    .sidebar { grid-row: 1 / -1; background: var(--espresso); display: flex; flex-direction: column; }
+    .sidebar-logo { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+    .sidebar-logo h1 { font-family: var(--serif); font-size: 22px; color: var(--cream); }
+    .sidebar-logo h1 span { color: var(--caramel); }
+    .sidebar-logo small { display: block; font-size: 10px; color: var(--steam); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+    .sidebar-nav { flex: 1; padding: 10px 0; }
+    .nav-label { padding: 14px 20px 4px; font-size: 9px; font-family: var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--steam); }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 20px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 500; text-decoration: none; border-left: 3px solid transparent; transition: all 0.15s; }
+    .nav-item:hover { color: var(--cream); background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: var(--caramel); background: rgba(198,139,58,0.12); border-left-color: var(--caramel); }
+    .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+    .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); }
+    .staff-row { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--caramel); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .staff-name { color: var(--cream); font-size: 12px; font-weight: 600; }
+    .staff-role { font-size: 9px; color: var(--caramel); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+    .staff-info { flex: 1; overflow: hidden; }
+    .logout-btn { background: none; border: none; color: var(--steam); cursor: pointer; font-size: 15px; }
+
+    /* Topbar */
+    .topbar { background: white; border-bottom: 1px solid var(--foam); display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    .topbar-title { font-size: 16px; font-weight: 700; }
+    .topbar-right { display: flex; gap: 8px; align-items: center; }
+    .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost { background: transparent; color: var(--slate); }
+    .btn-ghost:hover { background: var(--foam); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--caramel); color: var(--caramel); }
+    .btn-outline:hover { background: var(--caramel); color: white; }
+    .btn-primary { background: var(--espresso); color: white; }
+    .btn-primary:hover { background: var(--roast); }
+    .btn-secondary { background: var(--foam); color: var(--slate); }
+    .btn-secondary:hover { background: #E5DDD5; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-success:hover { opacity: 0.9; }
+    .btn-lg { padding: 14px 24px; font-size: 15px; border-radius: 10px; }
+
+    /* Main content */
+    .main { overflow-y: auto; padding: 28px; }
+
+    /* Order lookup */
+    .lookup-bar {
+      background: white; border-radius: 12px; padding: 20px 24px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 24px;
+      display: flex; gap: 12px; align-items: flex-end;
+    }
+    .lookup-bar .form-group { margin: 0; flex: 1; }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--steam); margin-bottom: 5px; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; }
+    .form-input, .form-select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #E5DDD5; border-radius: 8px;
+      font-size: 13px; font-family: var(--font); outline: none;
+      color: var(--espresso); transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--caramel); box-shadow: 0 0 0 3px rgba(198,139,58,0.12); }
+
+    /* Two-column billing layout */
+    .billing-grid { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+
+    .card { background: white; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; }
+    .card-header { padding: 16px 20px; border-bottom: 1px solid var(--foam); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h3 { font-size: 14px; font-weight: 700; }
+    .card-body { padding: 20px; }
+
+    /* Order summary table */
+    .order-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    .info-chip { background: var(--foam); border-radius: 8px; padding: 10px 14px; }
+    .info-chip-label { font-size: 9px; font-family: var(--mono); color: var(--steam); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+    .info-chip-value { font-size: 14px; font-weight: 700; color: var(--espresso); }
+
+    .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .items-table th { text-align: left; padding: 8px 12px; background: var(--foam); color: var(--steam); font-size: 10px; font-family: var(--mono); letter-spacing: 1px; text-transform: uppercase; border-bottom: 1px solid #E5DDD5; }
+    .items-table td { padding: 11px 12px; border-bottom: 1px solid var(--foam); }
+    .items-table tr:last-child td { border-bottom: none; }
+    .items-table .td-name { font-weight: 600; }
+    .items-table .td-note { font-size: 10px; color: var(--steam); display: block; margin-top: 2px; }
+    .items-table .td-right { text-align: right; font-family: var(--mono); font-weight: 600; }
+
+    /* Payment panel */
+    .payment-panel { display: flex; flex-direction: column; gap: 16px; }
+
+    /* Bill totals */
+    .bill-totals { background: var(--foam); border-radius: 10px; padding: 16px; }
+    .bt-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 13px; color: var(--slate); }
+    .bt-row.strike { text-decoration: line-through; color: #B0A090; }
+    .bt-row.discount { color: var(--success); font-weight: 600; }
+    .bt-row.grand { font-size: 22px; font-weight: 800; color: var(--espresso); border-top: 2px solid #E5DDD5; margin-top: 10px; padding-top: 12px; }
+    .bt-row.grand .bt-val { color: var(--caramel); font-family: var(--mono); }
+
+    /* Discount section */
+    .discount-section { border: 1.5px solid #E5DDD5; border-radius: 10px; padding: 16px; }
+    .ds-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .ds-header h4 { font-size: 13px; font-weight: 700; }
+    .ds-toggle { display: flex; gap: 6px; }
+    .disc-type-btn {
+      padding: 4px 12px; border-radius: 6px; border: 1.5px solid #E5DDD5;
+      font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font); background: white;
+      transition: all 0.12s;
+    }
+    .disc-type-btn.active { background: var(--espresso); border-color: var(--espresso); color: white; }
+    .discount-input-wrap { display: flex; gap: 8px; align-items: center; }
+    .discount-input-wrap input { flex: 1; padding: 8px 12px; border: 1.5px solid #E5DDD5; border-radius: 8px; font-size: 14px; font-family: var(--mono); font-weight: 600; outline: none; }
+    .discount-input-wrap input:focus { border-color: var(--caramel); }
+    .discount-input-wrap span { font-size: 16px; color: var(--steam); font-weight: 700; }
+
+    /* Payment method */
+    .payment-methods { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .pm-btn {
+      padding: 14px 8px; border-radius: 10px; border: 2px solid #E5DDD5;
+      background: white; cursor: pointer; text-align: center;
+      transition: all 0.15s; font-family: var(--font);
+    }
+    .pm-btn:hover { border-color: var(--caramel); }
+    .pm-btn.selected { border-color: var(--espresso); background: var(--espresso); }
+    .pm-icon  { font-size: 22px; margin-bottom: 5px; }
+    .pm-label { font-size: 11px; font-weight: 700; color: var(--espresso); }
+    .pm-btn.selected .pm-label { color: white; }
+
+    /* Cash tendered */
+    .cash-section { border: 1.5px solid var(--caramel); border-radius: 10px; padding: 16px; background: #FEF9F2; }
+    .cash-section.hidden { display: none; }
+    .cash-label { font-size: 11px; font-family: var(--mono); color: var(--steam); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .cash-input-wrap { position: relative; }
+    .cash-symbol { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 16px; font-weight: 700; color: var(--steam); }
+    .cash-input { width: 100%; padding: 12px 12px 12px 30px; border: 2px solid var(--caramel); border-radius: 8px; font-size: 20px; font-family: var(--mono); font-weight: 700; outline: none; background: white; }
+    .cash-presets { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+    .cash-preset { padding: 5px 12px; border-radius: 6px; background: white; border: 1.5px solid #E5DDD5; font-size: 12px; font-family: var(--mono); font-weight: 600; cursor: pointer; transition: all 0.1s; }
+    .cash-preset:hover { border-color: var(--caramel); color: var(--caramel); }
+
+    .change-display {
+      margin-top: 12px; padding: 12px; border-radius: 8px;
+      background: var(--success); color: white; text-align: center;
+      font-size: 18px; font-weight: 700; font-family: var(--mono);
+      display: none;
+    }
+    .change-display.show { display: block; }
+    .change-label { font-size: 10px; font-family: 'DM Sans', sans-serif; font-weight: 400; opacity: 0.8; margin-bottom: 2px; }
+
+    /* Receipt preview */
+    .receipt-preview {
+      background: white; border: 1px dashed #C4B8AE; border-radius: 8px;
+      padding: 20px; font-family: var(--mono); font-size: 12px;
+      max-height: 300px; overflow-y: auto; display: none;
+    }
+    .receipt-preview.show { display: block; }
+    .rp-center { text-align: center; margin-bottom: 6px; }
+    .rp-hr { border: none; border-top: 1px dashed #C4B8AE; margin: 8px 0; }
+    .rp-row { display: flex; justify-content: space-between; margin: 3px 0; }
+
+    /* Empty / loading */
+    .state-msg { text-align: center; padding: 60px 24px; color: var(--steam); }
+    .state-msg .icon { font-size: 48px; opacity: 0.25; margin-bottom: 12px; }
+    .state-msg p { font-size: 14px; }
+
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--foam); border-top-color: var(--caramel); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Paid overlay */
+    .paid-overlay {
+      position: fixed; inset: 0; background: rgba(26,14,5,0.7);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 1000; backdrop-filter: blur(4px);
+    }
+    .paid-overlay.hidden { display: none; }
+    .paid-card {
+      background: white; border-radius: 20px; padding: 48px 56px; text-align: center;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.25); max-width: 400px; width: 94vw;
+    }
+    .paid-icon { font-size: 72px; margin-bottom: 16px; }
+    .paid-amount { font-size: 40px; font-weight: 900; color: var(--caramel); font-family: var(--mono); margin-bottom: 6px; }
+    .paid-change { font-size: 18px; color: var(--success); font-weight: 700; font-family: var(--mono); margin-bottom: 8px; }
+    .paid-bill-num { font-family: var(--mono); font-size: 12px; color: var(--steam); margin-bottom: 24px; }
+    .paid-actions { display: flex; flex-direction: column; gap: 10px; }
+
+    /* Toast */
+    #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast { background: var(--espresso); color: white; padding: 11px 18px; border-radius: 10px; font-size: 13px; max-width: 300px; opacity: 0; transform: translateY(8px); transition: all 0.25s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.danger  { background: var(--danger); }
+    .toast.warning { background: var(--warning); }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Café<span>OS</span></h1>
+      <small>Point of Sale</small>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Operations</div>
+      <a href="tables.html"  class="nav-item"><span class="icon">🪑</span> Tables</a>
+      <a href="pos.html"     class="nav-item"><span class="icon">📋</span> POS Order</a>
+      <a href="orders.html"  class="nav-item"><span class="icon">📨</span> Open Orders</a>
+      <a href="billing.html" class="nav-item active"><span class="icon">💳</span> Billing</a>
+      <div class="nav-label">Management</div>
+      <a href="reports.html"    class="nav-item"><span class="icon">📊</span> Reports</a>
+      <a href="menu-admin.html" class="nav-item"><span class="icon">🍽</span> Menu</a>
+      <a href="settings.html"   class="nav-item"><span class="icon">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="staff-row">
+        <div class="avatar" id="sAvatar">?</div>
+        <div class="staff-info">
+          <div class="staff-name" id="sName">...</div>
+          <div class="staff-role" id="sRole">-</div>
+        </div>
+        <button class="logout-btn" onclick="API.auth.logout()">⏏</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar">
+    <div class="topbar-title">💳 Billing & Payment</div>
+    <div class="topbar-right">
+      <button class="btn btn-ghost" onclick="window.location.href='tables.html'">← Floor Map</button>
+      <button class="btn btn-outline" onclick="printReceipt()" id="btnPrint" style="display:none">🖨 Print Receipt</button>
+    </div>
+  </header>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Order lookup bar -->
+    <div class="lookup-bar">
+      <div class="form-group">
+        <div class="form-label">Order Number or Table</div>
+        <input type="text" class="form-input" id="orderLookup" placeholder="e.g. ORD-20250228-0001 or T3" oninput="filterOpenOrders(this.value)">
+      </div>
+      <div class="form-group">
+        <div class="form-label">Open Orders</div>
+        <select class="form-select" id="openOrdersSelect" onchange="loadOrderFromSelect(this.value)">
+          <option value="">— Select open order —</option>
+        </select>
+      </div>
+      <button class="btn btn-primary" onclick="loadOrderFromInput()">Load Order</button>
+    </div>
+
+    <!-- Billing content -->
+    <div id="billingContent">
+      <div class="state-msg">
+        <div class="icon">💳</div>
+        <p>Select an open order above to generate the bill</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Payment success overlay -->
+<div class="paid-overlay hidden" id="paidOverlay">
+  <div class="paid-card">
+    <div class="paid-icon">✅</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:8px">Payment Received!</div>
+    <div class="paid-amount" id="paidAmount">₹0.00</div>
+    <div class="paid-change" id="paidChange" style="display:none"></div>
+    <div class="paid-bill-num" id="paidBillNum"></div>
+    <div class="paid-actions">
+      <button class="btn btn-primary btn-lg" onclick="printAndNew()">🖨 Print & New Order</button>
+      <button class="btn btn-secondary btn-lg" onclick="goTables()">← Back to Tables</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script src="../js/api.js"></script>
+<script>
+let state = {
+  order:          null,
+  bill:           null,
+  discountType:   'none',
+  discountValue:  0,
+  paymentMethod:  'cash',
+  amountTendered: 0,
+  openOrders:     [],
+};
+
+// ── Boot ─────────────────────────────────────────────────────
+(async () => {
+  if (!API.Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+  const user = API.Auth.getUser();
+  document.getElementById('sAvatar').textContent = user.name[0].toUpperCase();
+  document.getElementById('sName').textContent   = user.name;
+  document.getElementById('sRole').textContent   = user.role.toUpperCase();
+
+  await loadOpenOrders();
+
+  // Auto-load from URL param
+  const orderId = new URLSearchParams(window.location.search).get('order_id');
+  if (orderId) await loadOrder(parseInt(orderId));
+})();
+
+async function loadOpenOrders() {
+  try {
+    const data = await API.orders.list({ status: 'sent' });
+    // Also get 'open' and 'ready' orders
+    const data2 = await API.orders.list({ status: 'open' });
+    const data3 = await API.orders.list({ status: 'ready' });
+    state.openOrders = [...(data.orders||[]), ...(data2.orders||[]), ...(data3.orders||[])];
+    populateOrderDropdown(state.openOrders);
+  } catch (err) {}
+}
+
+function populateOrderDropdown(orders) {
+  const sel = document.getElementById('openOrdersSelect');
+  sel.innerHTML = '<option value="">— Select open order —</option>' +
+    orders.map(o => `<option value="${o.id}">${o.order_number} — ${o.table_number || 'Takeaway'} (₹${parseFloat(o.running_total||0).toFixed(0)})</option>`).join('');
+}
+
+function filterOpenOrders(q) {
+  const filtered = q
+    ? state.openOrders.filter(o => o.order_number.toLowerCase().includes(q.toLowerCase()) || (o.table_number||'').toLowerCase().includes(q.toLowerCase()))
+    : state.openOrders;
+  populateOrderDropdown(filtered);
+}
+
+function loadOrderFromSelect(val) {
+  if (val) loadOrder(parseInt(val));
+}
+
+async function loadOrderFromInput() {
+  const val = document.getElementById('orderLookup').value.trim();
+  if (!val) { showToast('Enter order number or table', 'warning'); return; }
+
+  // Try to find in open orders list
+  const found = state.openOrders.find(o =>
+    o.order_number.toLowerCase() === val.toLowerCase() ||
+    (o.table_number || '').toLowerCase() === val.toLowerCase()
+  );
+  if (found) { await loadOrder(found.id); return; }
+
+  showToast('Order not found in open orders', 'warning');
+}
+
+async function loadOrder(orderId) {
+  document.getElementById('billingContent').innerHTML = '<div class="state-msg"><div class="spinner"></div></div>';
+
+  try {
+    const order = await API.orders.get(orderId);
+
+    if (order.status === 'billed') {
+      showToast('This order is already billed', 'warning'); return;
+    }
+    if (order.status === 'cancelled') {
+      showToast('This order is cancelled', 'danger'); return;
+    }
+
+    state.order         = order;
+    state.bill          = null;
+    state.discountType  = 'none';
+    state.discountValue = 0;
+    state.paymentMethod = 'cash';
+
+    renderBillingUI();
+    await previewBill();
+  } catch (err) {
+    showToast('Failed to load order: ' + err.message, 'danger');
+    document.getElementById('billingContent').innerHTML = `<div class="state-msg"><div class="icon">⚠️</div><p>${err.message}</p></div>`;
+  }
+}
+
+function renderBillingUI() {
+  const o = state.order;
+  const activeItems = (o.items || []).filter(i => i.status !== 'voided');
+
+  const typeLabel = { dine_in:'Dine In', takeaway:'Takeaway', delivery:'Delivery' }[o.order_type] || o.order_type;
+  const mins = Math.floor((Date.now() - new Date(o.created_at)) / 60000);
+
+  const itemsRows = activeItems.map(i => `
+    <tr>
+      <td class="td-name">
+        ${i.item_name}
+        ${i.notes ? `<span class="td-note">📝 ${i.notes}</span>` : ''}
+      </td>
+      <td style="text-align:center;color:var(--steam)">×${i.quantity}</td>
+      <td class="td-right">₹${parseFloat(i.unit_price).toFixed(2)}</td>
+      <td class="td-right" style="color:var(--espresso)">₹${parseFloat(i.subtotal).toFixed(2)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('billingContent').innerHTML = `
+    <div class="billing-grid">
+
+      <!-- LEFT: Order details -->
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header">
+            <h3>📋 ${o.order_number}</h3>
+            <span style="font-size:11px;background:var(--foam);padding:3px 10px;border-radius:6px;font-family:var(--mono)">
+              ${typeLabel} · ${o.table_number ? 'Table '+o.table_number : 'No Table'}
+            </span>
+          </div>
+          <div class="card-body">
+            <div class="order-info-grid">
+              <div class="info-chip">
+                <div class="info-chip-label">Table</div>
+                <div class="info-chip-value">${o.table_number || '—'}</div>
+              </div>
+              <div class="info-chip">
+                <div class="info-chip-label">Waiter</div>
+                <div class="info-chip-value">${o.staff_name || '—'}</div>
+              </div>
+              <div class="info-chip">
+                <div class="info-chip-label">Guests</div>
+                <div class="info-chip-value">${o.guest_count}</div>
+              </div>
+              <div class="info-chip">
+                <div class="info-chip-label">Duration</div>
+                <div class="info-chip-value">${mins}m</div>
+              </div>
+            </div>
+
+            <table class="items-table">
+              <thead>
+                <tr><th>Item</th><th style="text-align:center">Qty</th><th style="text-align:right">Unit</th><th style="text-align:right">Total</th></tr>
+              </thead>
+              <tbody>${itemsRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Payment -->
+      <div class="payment-panel">
+
+        <!-- Bill totals -->
+        <div class="card">
+          <div class="card-header"><h3>🧾 Bill Summary</h3></div>
+          <div class="card-body">
+            <div class="bill-totals" id="billTotals">
+              <div style="text-align:center;padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Discount -->
+        <div class="card">
+          <div class="card-header">
+            <h3>🏷 Discount</h3>
+          </div>
+          <div class="card-body">
+            <div class="discount-section" style="border:none;padding:0">
+              <div class="ds-header" style="margin-bottom:10px">
+                <div class="ds-toggle">
+                  <button class="disc-type-btn active" id="disc-none"    onclick="setDiscType('none')">None</button>
+                  <button class="disc-type-btn"         id="disc-percent" onclick="setDiscType('percent')">%</button>
+                  <button class="disc-type-btn"         id="disc-flat"    onclick="setDiscType('flat')">Flat ₹</button>
+                </div>
+              </div>
+              <div class="discount-input-wrap" id="discountInputWrap" style="display:none">
+                <input type="number" id="discountValue" min="0" placeholder="0" oninput="onDiscountChange()">
+                <span id="discSuffix">%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payment method -->
+        <div class="card">
+          <div class="card-header"><h3>💰 Payment Method</h3></div>
+          <div class="card-body">
+            <div class="payment-methods">
+              <button class="pm-btn selected" id="pm-cash"           onclick="selectPayment('cash')">
+                <div class="pm-icon">💵</div><div class="pm-label">Cash</div>
+              </button>
+              <button class="pm-btn" id="pm-card"                    onclick="selectPayment('card')">
+                <div class="pm-icon">💳</div><div class="pm-label">Card</div>
+              </button>
+              <button class="pm-btn" id="pm-upi"                     onclick="selectPayment('upi')">
+                <div class="pm-icon">📱</div><div class="pm-label">UPI / QR</div>
+              </button>
+              <button class="pm-btn" id="pm-split"                   onclick="selectPayment('split')">
+                <div class="pm-icon">✂️</div><div class="pm-label">Split</div>
+              </button>
+              <button class="pm-btn" id="pm-complimentary"           onclick="selectPayment('complimentary')">
+                <div class="pm-icon">🎁</div><div class="pm-label">Comp</div>
+              </button>
+            </div>
+
+            <!-- Cash tendered -->
+            <div class="cash-section" id="cashSection" style="margin-top:16px">
+              <div class="cash-label">Amount Tendered</div>
+              <div class="cash-input-wrap">
+                <span class="cash-symbol">₹</span>
+                <input type="number" class="cash-input" id="cashInput" min="0" placeholder="0.00" oninput="calcChange()">
+              </div>
+              <div class="cash-presets" id="cashPresets"></div>
+              <div class="change-display" id="changeDisplay">
+                <div class="change-label">Change to return</div>
+                <div id="changeAmount">₹0.00</div>
+              </div>
+            </div>
+
+            <button class="btn btn-success btn-lg" style="width:100%;margin-top:16px;justify-content:center" id="btnPayNow" onclick="processPayment()">
+              ✅ Confirm Payment
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  `;
+
+  // Update URL
+  history.replaceState(null, '', `?order_id=${o.id}`);
+}
+
+// ── Bill calculation ──────────────────────────────────────────
+async function previewBill() {
+  try {
+    const data = await API.billing.preview(state.order.id, state.discountType, state.discountValue);
+    renderTotals(data);
+    generateCashPresets(data.grand_total);
+  } catch (err) {
+    document.getElementById('billTotals').innerHTML = `<p style="color:var(--danger);font-size:12px">${err.message}</p>`;
+  }
+}
+
+function renderTotals(data) {
+  const { subtotal, discount_amount, discount_type, discount_value, tax_rate, tax_amount, grand_total } = data;
+  const hasDiscount = discount_type !== 'none' && discount_amount > 0;
+
+  document.getElementById('billTotals').innerHTML = `
+    <div class="bt-row"><span>Subtotal</span><span class="bt-val">₹${parseFloat(subtotal).toFixed(2)}</span></div>
+    ${hasDiscount ? `
+    <div class="bt-row discount">
+      <span>Discount ${discount_type === 'percent' ? `(${discount_value}%)` : ''}</span>
+      <span class="bt-val">− ₹${parseFloat(discount_amount).toFixed(2)}</span>
+    </div>` : ''}
+    <div class="bt-row"><span>Tax (GST ${tax_rate}%)</span><span class="bt-val">₹${parseFloat(tax_amount).toFixed(2)}</span></div>
+    <div class="bt-row grand"><span>Grand Total</span><span class="bt-val">₹${parseFloat(grand_total).toFixed(2)}</span></div>
+  `;
+
+  state.grandTotal = parseFloat(grand_total);
+  generateCashPresets(state.grandTotal);
+}
+
+function setDiscType(type) {
+  state.discountType = type;
+  document.querySelectorAll('.disc-type-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('disc-' + type).classList.add('active');
+
+  const wrap = document.getElementById('discountInputWrap');
+  if (type === 'none') {
+    wrap.style.display  = 'none';
+    state.discountValue = 0;
+  } else {
+    wrap.style.display = 'flex';
+    document.getElementById('discSuffix').textContent = type === 'percent' ? '%' : '₹';
+    document.getElementById('discountValue').focus();
+  }
+  previewBill();
+}
+
+function onDiscountChange() {
+  state.discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
+  previewBill();
+}
+
+// ── Payment method ────────────────────────────────────────────
+function selectPayment(method) {
+  state.paymentMethod = method;
+  document.querySelectorAll('.pm-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('pm-' + method).classList.add('selected');
+
+  const cashSec = document.getElementById('cashSection');
+  cashSec.classList.toggle('hidden', method !== 'cash');
+  cashSec.style.display = method === 'cash' ? '' : 'none';
+}
+
+function generateCashPresets(total) {
+  const container = document.getElementById('cashPresets');
+  if (!container) return;
+
+  // Smart presets: round up to nearest 10, 50, 100, etc.
+  const presets = new Set();
+  presets.add(Math.ceil(total / 10) * 10);
+  presets.add(Math.ceil(total / 50) * 50);
+  presets.add(Math.ceil(total / 100) * 100);
+  presets.add(Math.ceil(total / 500) * 500);
+
+  container.innerHTML = [...presets].filter(p => p >= total).slice(0, 4).map(p =>
+    `<button class="cash-preset" onclick="setCash(${p})">₹${p}</button>`
+  ).join('');
+}
+
+function setCash(amount) {
+  document.getElementById('cashInput').value = amount;
+  calcChange();
+}
+
+function calcChange() {
+  const tendered = parseFloat(document.getElementById('cashInput').value) || 0;
+  state.amountTendered = tendered;
+
+  const display = document.getElementById('changeDisplay');
+  const changeEl = document.getElementById('changeAmount');
+
+  if (tendered >= (state.grandTotal || 0)) {
+    const change = tendered - (state.grandTotal || 0);
+    changeEl.textContent = `₹${change.toFixed(2)}`;
+    display.classList.add('show');
+  } else {
+    display.classList.remove('show');
+  }
+}
+
+// ── Process payment ───────────────────────────────────────────
+async function processPayment() {
+  if (!state.order) return;
+
+  const btn = document.getElementById('btnPayNow');
+
+  // Cash validation
+  if (state.paymentMethod === 'cash') {
+    const tendered = parseFloat(document.getElementById('cashInput').value) || 0;
+    if (tendered < (state.grandTotal || 0)) {
+      showToast('Tendered amount is less than total', 'danger');
+      document.getElementById('cashInput').focus();
+      return;
+    }
+    state.amountTendered = tendered;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Processing...';
+
+  try {
+    // 1. Generate bill if not yet generated
+    let bill = state.bill;
+    if (!bill) {
+      bill = await API.billing.generate({
+        order_id:       state.order.id,
+        discount_type:  state.discountType,
+        discount_value: state.discountValue,
+      });
+      state.bill = bill;
+    }
+
+    // 2. Record payment
+    const payData = {
+      payment_method:  state.paymentMethod,
+      amount_tendered: state.paymentMethod === 'cash' ? state.amountTendered : null,
+    };
+    const result = await API.billing.recordPayment(bill.id, payData);
+
+    // 3. Show success overlay
+    document.getElementById('paidAmount').textContent  = `₹${parseFloat(bill.grand_total).toFixed(2)}`;
+    document.getElementById('paidBillNum').textContent = bill.bill_number;
+    const changeEl = document.getElementById('paidChange');
+
+    if (state.paymentMethod === 'cash' && result.change_due > 0) {
+      changeEl.textContent = `Change: ₹${parseFloat(result.change_due).toFixed(2)}`;
+      changeEl.style.display = 'block';
+    }
+
+    document.getElementById('paidOverlay').classList.remove('hidden');
+    document.getElementById('btnPrint').style.display = '';
+    state.paidBill = bill;
+
+  } catch (err) {
+    showToast(err.message, 'danger');
+    btn.disabled = false;
+    btn.textContent = '✅ Confirm Payment';
+  }
+}
+
+async function printReceipt() {
+  if (!state.bill || !state.order) return;
+
+  // If running in Electron desktop app, use native thermal printer
+  if (window.electronAPI?.isElectron) {
+    const btn = document.getElementById('btnPrint');
+    btn.disabled = true;
+    btn.textContent = '⏳ Printing...';
+    try {
+      const bill    = state.bill;
+      const order   = state.order;
+      const active  = (order.items || []).filter(i => i.status !== 'voided');
+      const receipt = {
+        billNumber:     bill.bill_number,
+        orderNumber:    order.order_number,
+        tableNumber:    order.table_number || 'Takeaway',
+        date:           bill.created_at || new Date(),
+        cashierName:    state.cashierName || '',
+        guestCount:     order.guest_count,
+        items:          active.map(i => ({
+          name: i.item_name, quantity: i.quantity,
+          subtotal: i.subtotal, notes: i.notes || null,
+        })),
+        subtotal:       bill.subtotal,
+        discountType:   bill.discount_type,
+        discountValue:  bill.discount_value,
+        discountAmount: bill.discount_amount,
+        taxRate:        bill.tax_rate,
+        taxAmount:      bill.tax_amount,
+        grandTotal:     bill.grand_total,
+        paymentMethod:  bill.payment_method,
+        amountTendered: bill.amount_tendered,
+        changeDue:      bill.change_due,
+      };
+      const result = await window.electronAPI.printer.printReceipt(receipt);
+      if (result.success) {
+        showToast('Receipt printed ✅', 'success');
+      } else {
+        // Fallback to browser print if native fails
+        showToast('Printer error — opening browser print: ' + result.error, 'warning');
+        generateReceiptWindow(bill, order);
+      }
+    } catch (err) {
+      showToast('Print error: ' + err.message, 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🖨 Print Receipt';
+    }
+    return;
+  }
+
+  // Web mode: open print popup
+  generateReceiptWindow(state.bill, state.order);
+}
+
+function generateReceiptWindow(bill, order) {
+  const activeItems = (order.items || []).filter(i => i.status !== 'voided');
+  const win = window.open('', '_blank', 'width=340,height=600');
+  win.document.write(`
+    <!DOCTYPE html>
+    <html><head><title>Receipt - ${bill.bill_number}</title>
+    <style>
+      body { font-family: 'Courier New', monospace; font-size: 12px; max-width: 300px; margin: 0 auto; padding: 10px; }
+      .center { text-align: center; }
+      .bold { font-weight: bold; }
+      .big { font-size: 16px; }
+      hr { border: none; border-top: 1px dashed #999; margin: 8px 0; }
+      .row { display: flex; justify-content: space-between; margin: 3px 0; }
+      .grand { font-size: 16px; font-weight: bold; margin-top: 6px; }
+    </style></head>
+    <body>
+      <div class="center bold big">YOUR CAFE NAME</div>
+      <div class="center" style="font-size:11px;color:#666">123 Coffee Lane · +91 98765 43210</div>
+      <hr>
+      <div class="row"><span>Bill No:</span><span class="bold">${bill.bill_number}</span></div>
+      <div class="row"><span>Order:</span><span>${order.order_number}</span></div>
+      <div class="row"><span>Table:</span><span>${order.table_number || 'Takeaway'}</span></div>
+      <div class="row"><span>Date:</span><span>${new Date().toLocaleString('en-IN')}</span></div>
+      <hr>
+      ${activeItems.map(i => `
+        <div class="row">
+          <span>${i.item_name} ×${i.quantity}</span>
+          <span>₹${parseFloat(i.subtotal).toFixed(2)}</span>
+        </div>
+        ${i.notes ? `<div style="font-size:10px;color:#888;margin-left:8px"> ↳ ${i.notes}</div>` : ''}
+      `).join('')}
+      <hr>
+      <div class="row"><span>Subtotal</span><span>₹${parseFloat(bill.subtotal).toFixed(2)}</span></div>
+      ${bill.discount_amount > 0 ? `<div class="row"><span>Discount</span><span>-₹${parseFloat(bill.discount_amount).toFixed(2)}</span></div>` : ''}
+      <div class="row"><span>GST (${bill.tax_rate}%)</span><span>₹${parseFloat(bill.tax_amount).toFixed(2)}</span></div>
+      <div class="row grand"><span>TOTAL</span><span>₹${parseFloat(bill.grand_total).toFixed(2)}</span></div>
+      <div class="row" style="margin-top:4px"><span>Payment</span><span>${bill.payment_method.toUpperCase()}</span></div>
+      ${bill.change_due > 0 ? `<div class="row"><span>Change</span><span>₹${parseFloat(bill.change_due).toFixed(2)}</span></div>` : ''}
+      <hr>
+      <div class="center" style="margin-top:8px;font-size:11px">Thank you for visiting!</div>
+      <div class="center" style="font-size:11px">Come again ☕</div>
+    </body></html>
+  `);
+  win.document.close();
+  setTimeout(() => win.print(), 300);
+}
+
+function printAndNew() {
+  if (state.paidBill && state.order) printReceipt();
+  document.getElementById('paidOverlay').classList.add('hidden');
+  window.location.href = 'tables.html';
+}
+
+function goTables() {
+  window.location.href = 'tables.html';
+}
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+</script>
+</body>
+</html>

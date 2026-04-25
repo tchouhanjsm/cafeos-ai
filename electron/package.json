@@ -1,0 +1,105 @@
+{
+  "name": "cafeos",
+  "version": "1.0.0",
+  "description": "CaféOS — Restaurant Point of Sale System",
+  "main": "main.js",
+  "author": {
+    "name": "Your Cafe Name",
+    "email": "hello@yourcafe.com"
+  },
+  "license": "UNLICENSED",
+  "private": true,
+
+  "scripts": {
+    "start":       "electron .",
+    "start:dev":   "NODE_ENV=development electron .",
+    "build:win":   "electron-builder --win",
+    "build:mac":   "electron-builder --mac",
+    "build:linux": "electron-builder --linux",
+    "build:all":   "electron-builder -mwl",
+    "postinstall": "electron-builder install-app-deps"
+  },
+
+  "dependencies": {
+    "@paypi/node-escpos": "^0.0.4",
+    "electron-store":     "^8.1.0",
+    "electron-updater":   "^6.1.7",
+    "escpos":             "^3.0.0-alpha.6",
+    "escpos-usb":         "^3.0.0-alpha.4",
+    "escpos-network":     "^3.0.0-alpha.4",
+    "node-fetch":         "^2.7.0",
+    "better-sqlite3":     "^9.4.3",
+    "winston":            "^3.11.0"
+  },
+
+  "devDependencies": {
+    "electron":         "^29.0.0",
+    "electron-builder": "^24.9.1"
+  },
+
+  "build": {
+    "appId":       "com.yourcafe.cafeos",
+    "productName": "CaféOS",
+    "copyright":   "Copyright © 2025 Your Cafe",
+
+    "directories": {
+      "output": "../dist",
+      "buildResources": "build"
+    },
+
+    "files": [
+      "**/*",
+      "!node_modules/.cache",
+      "!**/*.map"
+    ],
+
+    "extraResources": [
+      {
+        "from": "../frontend",
+        "to":   "frontend",
+        "filter": ["**/*"]
+      }
+    ],
+
+    "win": {
+      "target": [
+        { "target": "nsis",     "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ],
+      "icon": "build/icon.ico"
+    },
+
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["x64", "arm64"] }
+      ],
+      "icon":     "build/icon.icns",
+      "category": "public.app-category.business"
+    },
+
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] },
+        { "target": "deb",      "arch": ["x64"] }
+      ],
+      "icon":     "build/icons",
+      "category": "Office"
+    },
+
+    "nsis": {
+      "oneClick":              false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon":         "build/icon.ico",
+      "uninstallerIcon":       "build/icon.ico",
+      "installerHeaderIcon":   "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName":          "CaféOS POS"
+    },
+
+    "publish": {
+      "provider": "generic",
+      "url":      "https://updates.yourcafe.com/cafeos/"
+    }
+  }
+}

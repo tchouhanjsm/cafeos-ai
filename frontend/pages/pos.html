@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CaféOS — POS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --espresso:   #1A0E05;
+      --roast:      #3D1F0A;
+      --caramel:    #C68B3A;
+      --caramel-lt: #E8A84C;
+      --cream:      #F8F4EE;
+      --foam:       #EDE8DF;
+      --steam:      #9B8F82;
+      --slate:      #5A5249;
+      --success:    #2D6A4F;
+      --danger:     #C0392B;
+      --warning:    #E67E22;
+      --sidebar-w:  220px;
+      --topbar-h:   56px;
+      --cart-w:     380px;
+      --font:       'DM Sans', sans-serif;
+      --mono:       'IBM Plex Mono', monospace;
+      --serif:      'Playfair Display', serif;
+    }
+
+    html, body { height: 100%; overflow: hidden; font-family: var(--font); color: var(--espresso); }
+
+    /* ── App shell ─────────────────────────────────────────── */
+    .shell {
+      display: grid;
+      grid-template-columns: var(--sidebar-w) 1fr var(--cart-w);
+      grid-template-rows: var(--topbar-h) 1fr;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ───────────────────────────────────────────── */
+    .sidebar {
+      grid-row: 1 / -1;
+      background: var(--espresso);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .sidebar-logo {
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      flex-shrink: 0;
+    }
+    .sidebar-logo h1 { font-family: var(--serif); font-size: 22px; color: var(--cream); }
+    .sidebar-logo h1 span { color: var(--caramel); }
+    .sidebar-logo small { display: block; font-size: 10px; color: var(--steam); letter-spacing: 1px; text-transform: uppercase; margin-top: 2px; }
+
+    .sidebar-nav { flex: 1; padding: 10px 0; overflow-y: auto; }
+    .nav-label { padding: 14px 20px 4px; font-size: 9px; font-family: var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--steam); }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 20px; color: rgba(255,255,255,0.55); font-size: 13px; font-weight: 500;
+      text-decoration: none; cursor: pointer; border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .nav-item:hover { color: var(--cream); background: rgba(255,255,255,0.05); }
+    .nav-item.active { color: var(--caramel); background: rgba(198,139,58,0.12); border-left-color: var(--caramel); }
+    .nav-item .icon { font-size: 15px; width: 18px; text-align: center; }
+
+    .sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .staff-row { display: flex; align-items: center; gap: 10px; }
+    .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--caramel); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .staff-info { flex: 1; overflow: hidden; }
+    .staff-name { color: var(--cream); font-size: 12px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .staff-role { font-size: 9px; color: var(--caramel); font-family: var(--mono); text-transform: uppercase; letter-spacing: 1px; }
+    .logout-btn { background: none; border: none; color: var(--steam); cursor: pointer; font-size: 15px; }
+    .logout-btn:hover { color: var(--danger); }
+
+    /* ── Topbar ────────────────────────────────────────────── */
+    .topbar {
+      background: white;
+      border-bottom: 1px solid var(--foam);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .order-badge {
+      background: var(--foam); border-radius: 8px; padding: 6px 14px;
+      display: flex; flex-direction: column;
+    }
+    .order-badge-label { font-size: 9px; font-family: var(--mono); color: var(--steam); letter-spacing: 1px; text-transform: uppercase; }
+    .order-badge-val   { font-size: 13px; font-weight: 700; color: var(--espresso); }
+
+    .topbar-center { flex: 1; padding: 0 24px; }
+    /* Search bar */
+    .search-wrap { position: relative; max-width: 340px; }
+    .search-wrap input {
+      width: 100%; padding: 8px 12px 8px 36px;
+      border: 1.5px solid #E5DDD5; border-radius: 8px;
+      font-size: 13px; font-family: var(--font); outline: none;
+      background: var(--foam); transition: all 0.15s;
+    }
+    .search-wrap input:focus { border-color: var(--caramel); background: white; }
+    .search-icon { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--steam); font-size: 14px; pointer-events: none; }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 8px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--font); transition: all 0.15s; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-sm { padding: 5px 10px; font-size: 11px; }
+    .btn-ghost { background: transparent; color: var(--slate); }
+    .btn-ghost:hover { background: var(--foam); }
+    .btn-outline { background: transparent; border: 1.5px solid var(--caramel); color: var(--caramel); }
+    .btn-outline:hover { background: var(--caramel); color: white; }
+
+    /* ── Menu panel ────────────────────────────────────────── */
+    .menu-panel {
+      background: var(--foam);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Category tabs */
+    .cat-tabs-wrap {
+      background: white;
+      border-bottom: 1px solid var(--foam);
+      padding: 12px 20px;
+      display: flex; gap: 8px; overflow-x: auto;
+      flex-shrink: 0; scrollbar-width: none;
+    }
+    .cat-tabs-wrap::-webkit-scrollbar { display: none; }
+    .cat-tab {
+      flex-shrink: 0; padding: 6px 16px; border-radius: 20px;
+      border: 1.5px solid #E5DDD5; background: white; cursor: pointer;
+      font-size: 12px; font-weight: 600; font-family: var(--font);
+      transition: all 0.15s; white-space: nowrap; display: flex; align-items: center; gap: 5px;
+    }
+    .cat-tab:hover { border-color: var(--caramel); color: var(--caramel); }
+    .cat-tab.active { background: var(--espresso); border-color: var(--espresso); color: white; }
+    .cat-tab .cat-count { font-size: 10px; opacity: 0.6; font-family: var(--mono); }
+
+    /* Menu grid */
+    .menu-items-area { padding: 20px; flex: 1; }
+    .section-title { font-size: 11px; font-family: var(--mono); letter-spacing: 2px; text-transform: uppercase; color: var(--steam); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: #E5DDD5; }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); gap: 12px; margin-bottom: 28px; }
+
+    .item-card {
+      background: white; border-radius: 12px; padding: 16px 14px;
+      cursor: pointer; border: 2px solid transparent;
+      transition: all 0.16s; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      position: relative; text-align: center;
+      animation: fadeUp 0.2s ease both;
+    }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .item-card:hover { border-color: var(--caramel); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(198,139,58,0.15); }
+    .item-card:active { transform: scale(0.97); }
+    .item-card.unavailable { opacity: 0.38; cursor: not-allowed; }
+    .item-card.unavailable:hover { transform: none; border-color: transparent; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+    .veg-indicator {
+      position: absolute; top: 8px; right: 8px;
+      width: 10px; height: 10px; border-radius: 2px;
+      border: 1.5px solid;
+    }
+    .veg-indicator.veg    { border-color: var(--success); background: var(--success); }
+    .veg-indicator.nonveg { border-color: var(--danger);  background: var(--danger); }
+
+    .item-emoji { font-size: 28px; margin-bottom: 8px; display: block; }
+    .item-name  { font-size: 12px; font-weight: 600; line-height: 1.3; margin-bottom: 6px; color: var(--espresso); }
+    .item-price { font-size: 15px; color: var(--caramel); font-weight: 700; font-family: var(--mono); }
+    .item-prep  { font-size: 10px; color: var(--steam); margin-top: 3px; }
+
+    .item-in-cart {
+      position: absolute; top: -6px; left: -6px;
+      background: var(--espresso); color: var(--caramel); border-radius: 50%;
+      width: 20px; height: 20px; font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      font-family: var(--mono);
+    }
+
+    .no-results { text-align: center; padding: 48px 20px; color: var(--steam); }
+    .no-results .nr-icon { font-size: 40px; opacity: 0.3; margin-bottom: 10px; }
+
+    /* ── Cart panel ────────────────────────────────────────── */
+    .cart-panel {
+      grid-row: 1 / -1;
+      background: white; border-left: 1px solid var(--foam);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .cart-top {
+      padding: 16px 20px 14px;
+      border-bottom: 1px solid var(--foam);
+      flex-shrink: 0;
+    }
+    .cart-top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+    .cart-title { font-size: 15px; font-weight: 700; }
+    .cart-order-num { font-family: var(--mono); font-size: 10px; color: var(--steam); background: var(--foam); padding: 2px 8px; border-radius: 4px; }
+
+    /* Table/order info bar */
+    .order-info-bar {
+      background: var(--foam); border-radius: 8px; padding: 10px 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .oib-left  { font-size: 13px; font-weight: 600; color: var(--espresso); }
+    .oib-right { font-size: 11px; color: var(--steam); }
+    .oib-type { display: inline-block; background: var(--caramel); color: white; font-size: 9px; font-family: var(--mono); padding: 2px 6px; border-radius: 4px; margin-left: 6px; text-transform: uppercase; }
+
+    /* Cart items */
+    .cart-items { flex: 1; overflow-y: auto; padding: 10px 12px; }
+    .cart-empty {
+      height: 100%; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 10px;
+      color: var(--steam); padding: 32px;
+    }
+    .cart-empty-icon { font-size: 48px; opacity: 0.25; }
+    .cart-empty-text { font-size: 13px; text-align: center; }
+
+    .cart-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 8px; border-radius: 8px; margin-bottom: 4px;
+      transition: background 0.1s;
+    }
+    .cart-item:hover { background: var(--foam); }
+
+    .ci-info { flex: 1; min-width: 0; }
+    .ci-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-note { font-size: 10px; color: var(--steam); margin-top: 2px; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci-sub  { font-size: 12px; color: var(--caramel); font-weight: 700; font-family: var(--mono); margin-top: 4px; }
+
+    .qty-ctrl { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+    .qty-btn {
+      width: 26px; height: 26px; border-radius: 50%;
+      border: 1.5px solid #E5DDD5; background: white;
+      cursor: pointer; font-size: 15px; line-height: 1;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: var(--slate); transition: all 0.1s;
+    }
+    .qty-btn:hover { border-color: var(--caramel); color: var(--caramel); }
+    .qty-btn.remove:hover { border-color: var(--danger); color: var(--danger); }
+    .qty-val { font-size: 13px; font-weight: 700; min-width: 18px; text-align: center; font-family: var(--mono); }
+
+    /* Notes input per item */
+    .ci-note-input {
+      width: 100%; margin-top: 5px; padding: 4px 8px;
+      border: 1px solid #E5DDD5; border-radius: 6px;
+      font-size: 11px; font-family: var(--font); outline: none; color: var(--espresso);
+      background: white; transition: border-color 0.15s;
+    }
+    .ci-note-input:focus { border-color: var(--caramel); }
+    .ci-note-input::placeholder { color: #C4B8AE; }
+
+    /* Cart footer */
+    .cart-footer { padding: 14px 20px; border-top: 1px solid var(--foam); flex-shrink: 0; }
+
+    .cart-totals { margin-bottom: 14px; }
+    .ct-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; font-size: 12px; color: var(--slate); }
+    .ct-row.grand { font-size: 20px; font-weight: 700; color: var(--espresso); padding-top: 10px; margin-top: 8px; border-top: 2px solid var(--foam); }
+    .ct-row.grand .ct-val { color: var(--caramel); font-family: var(--mono); }
+
+    /* Guest count */
+    .guest-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .guest-label { font-size: 12px; color: var(--slate); }
+    .guest-ctrl { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+    .guest-num { font-size: 14px; font-weight: 700; min-width: 24px; text-align: center; }
+
+    /* Action buttons */
+    .cart-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .cart-btn {
+      padding: 12px; border-radius: 10px; border: none;
+      font-size: 13px; font-weight: 700; cursor: pointer;
+      font-family: var(--font); transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .cart-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .cart-btn.kitchen { background: var(--espresso); color: var(--caramel); }
+    .cart-btn.kitchen:hover:not(:disabled) { background: var(--roast); }
+    .cart-btn.bill { background: var(--caramel); color: white; }
+    .cart-btn.bill:hover:not(:disabled) { background: var(--caramel-lt); }
+    .cart-btn.cancel { background: var(--foam); color: var(--slate); grid-column: span 2; font-size: 12px; }
+    .cart-btn.cancel:hover { background: #F5DDD5; color: var(--danger); }
+
+    /* ── Modal ─────────────────────────────────────────────── */
+    .overlay { position: fixed; inset: 0; background: rgba(26,14,5,0.55); display: flex; align-items: center; justify-content: center; z-index: 1000; backdrop-filter: blur(3px); }
+    .overlay.hidden { display: none; }
+    .modal { background: white; border-radius: 16px; width: 460px; max-width: 96vw; box-shadow: 0 20px 60px rgba(0,0,0,0.18); overflow: hidden; }
+    .modal-h { padding: 20px 24px 16px; border-bottom: 1px solid var(--foam); display: flex; align-items: center; justify-content: space-between; }
+    .modal-h h3 { font-size: 16px; font-weight: 700; }
+    .modal-x { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--steam); padding: 2px; }
+    .modal-x:hover { color: var(--danger); }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 14px 24px; border-top: 1px solid var(--foam); display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* New order type selector */
+    .order-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+    .type-btn {
+      padding: 18px 10px; border-radius: 12px; border: 2px solid #E5DDD5;
+      background: white; cursor: pointer; text-align: center;
+      transition: all 0.15s; font-family: var(--font);
+    }
+    .type-btn:hover { border-color: var(--caramel); }
+    .type-btn.selected { border-color: var(--espresso); background: var(--espresso); }
+    .type-btn .tb-icon { font-size: 26px; margin-bottom: 6px; }
+    .type-btn .tb-label { font-size: 12px; font-weight: 600; color: var(--espresso); }
+    .type-btn.selected .tb-label { color: white; }
+    .type-btn.selected .tb-icon { filter: grayscale(0); }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label { display: block; font-size: 11px; font-weight: 600; color: var(--slate); margin-bottom: 5px; font-family: var(--mono); letter-spacing: 0.5px; text-transform: uppercase; }
+    .form-input, .form-select {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid #E5DDD5; border-radius: 8px;
+      font-size: 13px; font-family: var(--font); outline: none;
+      color: var(--espresso); transition: border-color 0.15s;
+    }
+    .form-input:focus, .form-select:focus { border-color: var(--caramel); box-shadow: 0 0 0 3px rgba(198,139,58,0.12); }
+
+    .btn-primary { background: var(--espresso); color: white; }
+    .btn-primary:hover { background: var(--roast); }
+    .btn-secondary { background: var(--foam); color: var(--slate); }
+    .btn-secondary:hover { background: #E5DDD5; }
+
+    /* Loading / toast */
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--foam); border-top-color: var(--caramel); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #toasts { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+    .toast {
+      background: var(--espresso); color: white; padding: 11px 18px;
+      border-radius: 10px; font-size: 13px; max-width: 300px;
+      opacity: 0; transform: translateY(8px); transition: all 0.25s;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background: var(--success); }
+    .toast.danger  { background: var(--danger); }
+    .toast.warning { background: var(--warning); }
+
+    /* Pulse animation for kitchen send */
+    @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(198,139,58,0.4); } 50% { box-shadow: 0 0 0 8px rgba(198,139,58,0); } }
+    .cart-btn.kitchen.has-items { animation: pulse 2.5s infinite; }
+  </style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── SIDEBAR ──────────────────────────────────────────── -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <h1>Café<span>OS</span></h1>
+      <small>Point of Sale</small>
+    </div>
+    <div class="sidebar-nav">
+      <div class="nav-label">Operations</div>
+      <a href="tables.html"  class="nav-item"><span class="icon">🪑</span> Tables</a>
+      <a href="pos.html"     class="nav-item active"><span class="icon">📋</span> POS Order</a>
+      <a href="orders.html"  class="nav-item"><span class="icon">📨</span> Open Orders</a>
+      <a href="billing.html" class="nav-item"><span class="icon">💳</span> Billing</a>
+      <div class="nav-label">Management</div>
+      <a href="reports.html"    class="nav-item"><span class="icon">📊</span> Reports</a>
+      <a href="menu-admin.html" class="nav-item"><span class="icon">🍽</span> Menu</a>
+      <a href="settings.html"   class="nav-item"><span class="icon">⚙️</span> Settings</a>
+    </div>
+    <div class="sidebar-footer">
+      <div class="staff-row">
+        <div class="avatar" id="sAvatar">?</div>
+        <div class="staff-info">
+          <div class="staff-name" id="sName">...</div>
+          <div class="staff-role" id="sRole">-</div>
+        </div>
+        <button class="logout-btn" onclick="API.auth.logout()">⏏</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── TOPBAR ────────────────────────────────────────────── -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="order-badge">
+        <div class="order-badge-label">Order</div>
+        <div class="order-badge-val" id="topbarOrderNum">—</div>
+      </div>
+      <button class="btn btn-outline" style="font-size:12px" onclick="openNewOrderModal()">＋ New Order</button>
+    </div>
+
+    <div class="topbar-center">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" placeholder="Search menu items..." oninput="filterMenu(this.value)">
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <button class="btn btn-ghost btn-sm" onclick="window.location.href='tables.html'">← Floor</button>
+    </div>
+  </header>
+
+  <!-- ── MENU PANEL ─────────────────────────────────────────── -->
+  <section class="menu-panel" id="menuPanel">
+    <div style="padding:40px;text-align:center">
+      <div class="spinner" style="margin:0 auto 12px"></div>
+      <div style="font-size:13px;color:var(--steam)">Loading menu...</div>
+    </div>
+  </section>
+
+  <!-- ── CART PANEL ─────────────────────────────────────────── -->
+  <aside class="cart-panel">
+    <div class="cart-top">
+      <div class="cart-top-row">
+        <div class="cart-title">🛒 Current Order</div>
+        <div class="cart-order-num" id="cartOrderNum">—</div>
+      </div>
+      <div class="order-info-bar" id="orderInfoBar">
+        <div class="oib-left" id="oibTable">No active order</div>
+        <div class="oib-right" id="oibTime">—</div>
+      </div>
+    </div>
+
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty" id="cartEmpty">
+        <div class="cart-empty-icon">📋</div>
+        <div class="cart-empty-text">Tap menu items to add them to the order</div>
+      </div>
+    </div>
+
+    <div class="cart-footer">
+      <!-- Guest count -->
+      <div class="guest-row">
+        <div class="guest-label">👥 Guests</div>
+        <div class="guest-ctrl">
+          <button class="qty-btn" onclick="changeGuests(-1)">−</button>
+          <div class="guest-num" id="guestCount">1</div>
+          <button class="qty-btn" onclick="changeGuests(1)">+</button>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="cart-totals">
+        <div class="ct-row"><span>Subtotal</span><span class="ct-val" id="ctSubtotal">₹0.00</span></div>
+        <div class="ct-row"><span>Tax (GST <span id="taxRateLbl">5</span>%)</span><span class="ct-val" id="ctTax">₹0.00</span></div>
+        <div class="ct-row grand"><span>Total</span><span class="ct-val" id="ctTotal">₹0.00</span></div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="cart-actions">
+        <button class="cart-btn kitchen" id="btnKitchen" onclick="sendKitchen()" disabled>
+          🍳 Kitchen
+        </button>
+        <button class="cart-btn bill" id="btnBill" onclick="goBilling()" disabled>
+          💳 Bill
+        </button>
+        <button class="cart-btn cancel" id="btnCancel" onclick="cancelOrderPrompt()" style="display:none">
+          Cancel Order
+        </button>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<!-- ── NEW ORDER MODAL ─────────────────────────────────────── -->
+<div class="overlay hidden" id="newOrderModal">
+  <div class="modal">
+    <div class="modal-h">
+      <h3>Start New Order</h3>
+      <button class="modal-x" onclick="closeModal('newOrderModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <div class="form-label">Order Type</div>
+        <div class="order-type-grid">
+          <button class="type-btn selected" id="type-dine_in" onclick="selectType('dine_in')">
+            <div class="tb-icon">🪑</div>
+            <div class="tb-label">Dine In</div>
+          </button>
+          <button class="type-btn" id="type-takeaway" onclick="selectType('takeaway')">
+            <div class="tb-icon">🥡</div>
+            <div class="tb-label">Takeaway</div>
+          </button>
+          <button class="type-btn" id="type-delivery" onclick="selectType('delivery')">
+            <div class="tb-icon">🛵</div>
+            <div class="tb-label">Delivery</div>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group" id="tableSelectGroup">
+        <label class="form-label">Table</label>
+        <select class="form-select" id="tableSelect">
+          <option value="">Select a table...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Number of Guests</label>
+        <input type="number" class="form-input" id="newGuestCount" min="1" max="20" value="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('newOrderModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createNewOrder()">Create Order</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── ITEM NOTES MODAL ────────────────────────────────────── -->
+<div class="overlay hidden" id="notesModal">
+  <div class="modal">
+    <div class="modal-h">
+      <h3 id="noteItemName">Add Notes</h3>
+      <button class="modal-x" onclick="closeModal('notesModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Special Instructions</label>
+        <input type="text" class="form-input" id="noteText" placeholder="e.g. No sugar, extra shot, well done...">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="addQuickNote('No sugar')">No sugar</button>
+        <button class="btn btn-secondary btn-sm" onclick="addQuickNote('Extra shot')">Extra shot</button>
+        <button class="btn btn-secondary btn-sm" onclick="addQuickNote('Less spicy')">Less spicy</button>
+        <button class="btn btn-secondary btn-sm" onclick="addQuickNote('No onion')">No onion</button>
+        <button class="btn btn-secondary btn-sm" onclick="addQuickNote('Well done')">Well done</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('notesModal')">Skip</button>
+      <button class="btn btn-primary" onclick="confirmAddWithNote()">Add to Order</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+<script src="../js/api.js"></script>
+<script>
+// ── State ────────────────────────────────────────────────────
+let state = {
+  order:      null,   // current order object from API
+  menuData:   null,   // { items, categories }
+  cart:       [],     // local cart items (mirrors order.items)
+  tableList:  [],     // for new order modal
+  guests:     1,
+  orderType:  'dine_in',
+  taxRate:    5,
+  pendingItem: null,  // item waiting for notes confirmation
+};
+
+// ── Boot ─────────────────────────────────────────────────────
+(async () => {
+  if (!API.Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  const user = API.Auth.getUser();
+  document.getElementById('sAvatar').textContent = user.name[0].toUpperCase();
+  document.getElementById('sName').textContent   = user.name;
+  document.getElementById('sRole').textContent   = user.role.toUpperCase();
+
+  await loadMenu();
+
+  // If launched from tables page with ?table_id or ?order_id
+  const params  = new URLSearchParams(window.location.search);
+  const tableId = params.get('table_id');
+  const orderId = params.get('order_id');
+
+  if (orderId) {
+    await loadExistingOrder(parseInt(orderId));
+  } else if (tableId) {
+    await autoCreateOrder(parseInt(tableId));
+  }
+})();
+
+// ── Load menu ─────────────────────────────────────────────────
+async function loadMenu() {
+  try {
+    const data = await API.menu.getAll();
+    state.menuData = data;
+    renderMenu();
+  } catch (err) {
+    showToast('Failed to load menu: ' + err.message, 'danger');
+  }
+}
+
+function renderMenu(filter = '', activeCatId = null) {
+  const panel = document.getElementById('menuPanel');
+  const { categories } = state.menuData;
+
+  if (!categories || !categories.length) {
+    panel.innerHTML = '<div class="no-results"><div class="nr-icon">🍽</div><p>No menu items found.</p></div>';
+    return;
+  }
+
+  // Build category tabs
+  const tabsHTML = categories.map(c => `
+    <div class="cat-tab ${activeCatId === c.id || (!activeCatId && categories[0].id === c.id) ? 'active' : ''}"
+         onclick="scrollToCategory(${c.id}, this)">
+      ${c.icon} ${c.name}
+      <span class="cat-count">${c.items.length}</span>
+    </div>
+  `).join('');
+
+  // Build item sections
+  const sectionsHTML = categories.map(c => {
+    const items = filter
+      ? c.items.filter(i => i.name.toLowerCase().includes(filter.toLowerCase()))
+      : c.items;
+
+    if (!items.length) return '';
+
+    const itemsHTML = items.map(item => {
+      const inCart = state.cart.filter(ci => ci.menu_item_id === item.id && ci.status !== 'voided');
+      const totalQty = inCart.reduce((s, ci) => s + ci.quantity, 0);
+
+      return `
+        <div class="item-card ${item.is_available ? '' : 'unavailable'}"
+             onclick="${item.is_available ? `addItem(${JSON.stringify(item).replace(/"/g, '&quot;')})` : ''}"
+             title="${item.is_available ? '' : 'Currently unavailable'}">
+          ${totalQty ? `<div class="item-in-cart">${totalQty}</div>` : ''}
+          <div class="veg-indicator ${item.is_veg ? 'veg' : 'nonveg'}"></div>
+          <span class="item-emoji">${getCategoryEmoji(c.icon)}</span>
+          <div class="item-name">${item.name}</div>
+          <div class="item-price">₹${parseFloat(item.price).toFixed(2)}</div>
+          ${item.prep_time_min ? `<div class="item-prep">~${item.prep_time_min} min</div>` : ''}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="cat-section" id="cat-${c.id}">
+        <div class="section-title">${c.icon} ${c.name}</div>
+        <div class="menu-grid">${itemsHTML}</div>
+      </div>
+    `;
+  }).join('');
+
+  panel.innerHTML = `
+    <div class="cat-tabs-wrap" id="catTabs">${tabsHTML}</div>
+    <div class="menu-items-area" id="menuArea">
+      ${sectionsHTML || '<div class="no-results"><div class="nr-icon">🔍</div><p>No items match your search.</p></div>'}
+    </div>
+  `;
+}
+
+function getCategoryEmoji(icon) {
+  // Map category icons to food emoji for display
+  const map = { '☕': '☕', '🍵': '🍵', '🧃': '🥤', '🍽': '🍽', '🥪': '🥪', '🍰': '🍰' };
+  return map[icon] || icon || '🍽';
+}
+
+function scrollToCategory(catId, tabEl) {
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+  tabEl.classList.add('active');
+  const el = document.getElementById('cat-' + catId);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function filterMenu(query) {
+  if (!state.menuData) return;
+  renderMenu(query);
+}
+
+// ── Order management ──────────────────────────────────────────
+async function loadExistingOrder(orderId) {
+  try {
+    const order = await API.orders.get(orderId);
+    state.order  = order;
+    state.cart   = order.items || [];
+    state.guests = order.guest_count || 1;
+    document.getElementById('guestCount').textContent = state.guests;
+    updateOrderUI();
+    renderCart();
+    renderMenu(); // re-render to show cart counts
+    showToast(`Order ${order.order_number} loaded`, 'success');
+  } catch (err) {
+    showToast('Failed to load order: ' + err.message, 'danger');
+  }
+}
+
+async function autoCreateOrder(tableId) {
+  state.orderType = 'dine_in';
+  try {
+    const order = await API.orders.create({ table_id: tableId, order_type: 'dine_in', guest_count: 1 });
+    state.order  = order;
+    state.cart   = [];
+    updateOrderUI();
+    showToast(`Table ${order.table_number} — order started`, 'success');
+  } catch (err) {
+    // Table might already have an order
+    showToast(err.message, 'warning');
+    openNewOrderModal();
+  }
+}
+
+// ── New order modal ───────────────────────────────────────────
+async function openNewOrderModal() {
+  document.getElementById('newOrderModal').classList.remove('hidden');
+
+  // Load free tables
+  try {
+    const data = await API.tables.getAll();
+    const free = data.tables.filter(t => t.status === 'free');
+    const sel  = document.getElementById('tableSelect');
+    sel.innerHTML = '<option value="">Select a table...</option>' +
+      free.map(t => `<option value="${t.id}">${t.table_number} (${t.section}, ${t.capacity} seats)</option>`).join('');
+    state.tableList = free;
+  } catch (err) {}
+}
+
+function selectType(type) {
+  state.orderType = type;
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('type-' + type).classList.add('selected');
+  document.getElementById('tableSelectGroup').style.display = type === 'dine_in' ? '' : 'none';
+}
+
+async function createNewOrder() {
+  const type    = state.orderType;
+  const tableId = type === 'dine_in' ? parseInt(document.getElementById('tableSelect').value) : null;
+  const guests  = parseInt(document.getElementById('newGuestCount').value) || 1;
+
+  if (type === 'dine_in' && !tableId) { showToast('Please select a table', 'warning'); return; }
+
+  try {
+    const order  = await API.orders.create({ order_type: type, table_id: tableId, guest_count: guests });
+    state.order  = order;
+    state.cart   = [];
+    state.guests = guests;
+    document.getElementById('guestCount').textContent = guests;
+    closeModal('newOrderModal');
+    updateOrderUI();
+    renderCart();
+    renderMenu();
+    showToast(`Order ${order.order_number} created`, 'success');
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+
+// ── Add item to order ─────────────────────────────────────────
+function addItem(item) {
+  if (!state.order) {
+    showToast('Please start an order first', 'warning');
+    openNewOrderModal();
+    return;
+  }
+
+  // Store pending item, open notes modal
+  state.pendingItem = item;
+  document.getElementById('noteItemName').textContent = item.name;
+  document.getElementById('noteText').value = '';
+  document.getElementById('notesModal').classList.remove('hidden');
+  document.getElementById('noteText').focus();
+}
+
+function addQuickNote(note) {
+  const inp = document.getElementById('noteText');
+  inp.value = (inp.value ? inp.value + ', ' : '') + note;
+}
+
+async function confirmAddWithNote() {
+  const notes = document.getElementById('noteText').value.trim() || null;
+  closeModal('notesModal');
+  if (!state.pendingItem) return;
+
+  await pushAddItem(state.pendingItem, notes);
+  state.pendingItem = null;
+}
+
+async function pushAddItem(item, notes = null) {
+  try {
+    const updated = await API.orders.addItem(state.order.id, {
+      menu_item_id: item.id,
+      quantity:     1,
+      notes,
+    });
+    state.order = updated;
+    state.cart  = updated.items || [];
+    updateOrderUI();
+    renderCart();
+    renderMenu(); // refresh cart badge counts
+    showToast(`${item.name} added`, 'success');
+  } catch (err) {
+    showToast(err.message, 'danger');
+  }
+}
+
+// ── Cart interactions ─────────────────────────────────────────
+async function changeQty(itemId, delta) {
+  const cartItem = state.cart.find(ci => ci.id === itemId);
+  if (!cartItem) return;
+
+  const newQty = cartItem.quantity + delta;
+
+  if (newQty <= 0) {
+    await voidItem(itemId);
+  } else {
+    try {
+      const updated = await API.orders.updateItem(state.order.id, itemId, newQty);
+      state.order = updated;
+      state.cart  = updated.items || [];
+      updateOrderUI();
+      renderCart();
+      renderMenu();
+    } catch (err) { showToast(err.message, 'danger'); }
+  }
+}
+
+async function voidItem(itemId) {
+  try {
+    const updated = await API.orders.voidItem(state.order.id, itemId);
+    state.order = updated;
+    state.cart  = updated.items || [];
+    updateOrderUI();
+    renderCart();
+    renderMenu();
+    showToast('Item removed', 'success');
+  } catch (err) { showToast(err.message, 'danger'); }
+}
+
+async function changeGuests(delta) {
+  const newVal = Math.max(1, state.guests + delta);
+  state.guests = newVal;
+  document.getElementById('guestCount').textContent = newVal;
+
+  if (state.order) {
+    try {
+      await API.orders.update(state.order.id, { guest_count: newVal });
+    } catch (err) {}
+  }
+}
+
+// ── Send to kitchen ───────────────────────────────────────────
+async function sendKitchen() {
+  if (!state.order || !activeCartItems().length) return;
+
+  const btn = document.getElementById('btnKitchen');
+  btn.disabled = true;
+  btn.textContent = '⏳ Sending...';
+
+  try {
+    const updated = await API.orders.sendToKitchen(state.order.id);
+    state.order = updated;
+    state.cart  = updated.items || [];
+    renderCart();
+    updateOrderUI();
+    showToast('Order sent to kitchen! 🍳', 'success');
+  } catch (err) {
+    showToast(err.message, 'danger');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🍳 Kitchen';
+  }
+}
+
+function goBilling() {
+  if (!state.order) return;
+  window.location.href = `billing.html?order_id=${state.order.id}`;
+}
+
+async function cancelOrderPrompt() {
+  if (!state.order) return;
+  if (!confirm(`Cancel order ${state.order.order_number}? This cannot be undone.`)) return;
+
+  try {
+    await API.orders.cancel(state.order.id);
+    state.order  = null;
+    state.cart   = [];
+    renderCart();
+    updateOrderUI();
+    renderMenu();
+    showToast('Order cancelled', 'success');
+  } catch (err) { showToast(err.message, 'danger'); }
+}
+
+// ── Render cart ───────────────────────────────────────────────
+function renderCart() {
+  const container = document.getElementById('cartItems');
+  const active    = activeCartItems();
+
+  document.getElementById('cartEmpty').style.display = active.length ? 'none' : '';
+
+  // Clear previous items (keep empty state)
+  container.querySelectorAll('.cart-item').forEach(el => el.remove());
+
+  active.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cart-item';
+    div.innerHTML = `
+      <div class="ci-info">
+        <div class="ci-name">${item.item_name}</div>
+        ${item.notes ? `<span class="ci-note">📝 ${item.notes}</span>` : ''}
+        <div class="ci-sub">₹${parseFloat(item.unit_price).toFixed(2)} × ${item.quantity} = ₹${parseFloat(item.subtotal).toFixed(2)}</div>
+      </div>
+      <div class="qty-ctrl">
+        <button class="qty-btn remove" onclick="changeQty(${item.id}, -1)">−</button>
+        <div class="qty-val">${item.quantity}</div>
+        <button class="qty-btn" onclick="changeQty(${item.id}, 1)">+</button>
+      </div>
+    `;
+    container.appendChild(div);
+  });
+
+  // Totals
+  const subtotal = active.reduce((s, i) => s + parseFloat(i.subtotal), 0);
+  const tax      = subtotal * (state.taxRate / 100);
+  const total    = subtotal + tax;
+
+  document.getElementById('ctSubtotal').textContent = `₹${subtotal.toFixed(2)}`;
+  document.getElementById('ctTax').textContent      = `₹${tax.toFixed(2)}`;
+  document.getElementById('ctTotal').textContent    = `₹${total.toFixed(2)}`;
+
+  const hasItems = active.length > 0;
+  const hasPending = active.some(i => i.status === 'pending');
+
+  document.getElementById('btnKitchen').disabled = !hasItems || !hasPending;
+  document.getElementById('btnBill').disabled    = !hasItems;
+
+  if (hasItems) document.getElementById('btnKitchen').classList.add('has-items');
+  else document.getElementById('btnKitchen').classList.remove('has-items');
+}
+
+function activeCartItems() {
+  return (state.cart || []).filter(i => i.status !== 'voided');
+}
+
+function updateOrderUI() {
+  if (!state.order) {
+    document.getElementById('topbarOrderNum').textContent = '—';
+    document.getElementById('cartOrderNum').textContent   = '—';
+    document.getElementById('oibTable').textContent       = 'No active order';
+    document.getElementById('oibTime').textContent        = '—';
+    document.getElementById('btnCancel').style.display    = 'none';
+    return;
+  }
+
+  const o = state.order;
+  document.getElementById('topbarOrderNum').textContent = o.order_number;
+  document.getElementById('cartOrderNum').textContent   = o.order_number;
+
+  const typeLabel = { dine_in: 'Dine In', takeaway: 'Takeaway', delivery: 'Delivery' }[o.order_type] || o.order_type;
+  document.getElementById('oibTable').innerHTML =
+    `${o.table_number ? 'Table ' + o.table_number : 'No table'} <span class="oib-type">${typeLabel}</span>`;
+
+  const mins = Math.floor((Date.now() - new Date(o.created_at)) / 60000);
+  document.getElementById('oibTime').textContent = mins < 1 ? 'Just started' : `${mins}m ago`;
+
+  document.getElementById('btnCancel').style.display = ['billed','cancelled'].includes(o.status) ? 'none' : '';
+}
+
+// ── Modals ───────────────────────────────────────────────────
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+document.querySelectorAll('.overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+
+// ── Toast ─────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toasts');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3200);
+}
+</script>
+</body>
+</html>

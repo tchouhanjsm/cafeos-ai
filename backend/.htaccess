@@ -1,0 +1,66 @@
+# ============================================================
+# CaféOS — Backend .htaccess
+# Place this in: /backend/.htaccess
+# ============================================================
+
+# ── Security ─────────────────────────────────────────────────
+
+# Don't show directory listings
+Options -Indexes
+
+# Block access to sensitive files
+<FilesMatch "\.(sql|log|env|md|sh)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block direct access to PHP config/helper/middleware files
+<FilesMatch "^(db|settings|jwt|response|auth)\.(php)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Block access to the database folder entirely
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Block database directory
+    RewriteRule ^database/ - [F,L]
+
+    # Block config, helpers, middleware direct access
+    RewriteRule ^(config|helpers|middleware)/ - [F,L]
+
+    # Remove trailing slashes from API paths
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)/$ /$1 [R=301,L]
+</IfModule>
+
+# ── PHP Settings ──────────────────────────────────────────────
+<IfModule mod_php.c>
+    # ── CRITICAL: Turn off PHP error display ──────────────────
+    # XAMPP has display_errors = On by default. Any PHP warning
+    # or notice will be printed as HTML before the JSON response
+    # causing: Unexpected token '<', "<?xml vers"...
+    php_flag display_errors         Off
+    php_flag display_startup_errors Off
+    php_flag log_errors             On
+
+    # Hide PHP version in headers
+    php_flag expose_php Off
+
+    # File upload limits (for menu item images)
+    php_value upload_max_filesize 5M
+    php_value post_max_size 8M
+
+    # Reasonable timeouts
+    php_value max_execution_time 30
+    php_value max_input_time 30
+
+    # Session security
+    php_flag session.cookie_httponly On
+    php_flag session.cookie_secure   Off  # Set to On in HTTPS production
+</IfModule>
+
+# ── CORS handled in PHP — no need here ───────────────────────
+# CORS headers are set programmatically in each API file
+# via Response::cors() to allow fine-grained control.
